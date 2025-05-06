@@ -32,10 +32,10 @@
             <!-- Password Input -->
             <div>
                 <div class="flex items-center justify-between mb-1">
-                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                    <a href="{{ route('password.request') }}" class="text-xs text-indigo-600 hover:underline">
-                        Forgot password?
-                    </a>
+{{--                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>--}}
+{{--                    <a href="{{ route('password.request') }}" class="text-xs text-indigo-600 hover:underline">--}}
+{{--                        Forgot password?--}}
+{{--                    </a>--}}
                 </div>
                 <input
                     id="password"
@@ -73,7 +73,7 @@
             </div>
 
             <div class="mt-6 grid grid-cols-1 gap-3">
-                <a href="{{ route('login.provider', 'google') }}" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+{{--                <a href="{{ route('login.provider', 'google') }}" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">--}}
                     <img src="{{ asset('images/google-icon.png') }}" alt="Google" class="h-5 w-5 mr-2">
                     Google
                 </a>

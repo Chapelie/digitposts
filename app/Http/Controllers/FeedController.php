@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Training;
 use App\Models\Feed;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class FeedController extends Controller
 {
@@ -14,7 +15,7 @@ class FeedController extends Controller
     {
         // Get public feeds
         $publicFeeds = Feed::where('isPrivate', false)
-            ->where('status', 'active')
+            ->where('status', 'publiée')
             ->with(['feedable'])
             ->latest()
             ->get();
@@ -57,6 +58,7 @@ class FeedController extends Controller
             'trainings' => $trainings,
             'upcomingCount' => $upcomingCount,
             'freeCount' => $freeCount
+
         ]);
     }
 
@@ -96,13 +98,10 @@ class FeedController extends Controller
         return redirect()->route('feeds.index')->with('success', 'Activity created successfully');
     }
 
-    public function show(Feed $feed)
+    public function show($id)
     {
-        $this->authorize('view', $feed);
-
-        return view('feeds.show', [
-            'feed' => $feed->load('feedable', 'user')
-        ]);
+        $feed = Feed::with('feedable')->findOrFail($id);
+        return view('campagnes.show', compact('feed'));
     }
 
     public function edit(Feed $feed)
@@ -158,4 +157,25 @@ class FeedController extends Controller
     {
         // Implement adding comments
     }
+    public function registration(Request $request, Feed $feed)
+    {
+        $feedable = $feed->feedable; // Training ou Event
+
+        $registration = new Registration([
+            'user_id' => Auth::id(),
+            'status' => Registration::STATUS_PENDING,
+            'payment_status' => $feedable->amount > 0
+                ? Registration::PAYMENT_PENDING
+                : Registration::PAYMENT_COMPLETE,
+            'notes' => $request->notes,
+        ]);
+
+        $feed->registrations()->save($registration);
+
+        return redirect()->back()
+            ->with('success', 'Inscription enregistrée avec succès!');
+    }
+
+
+
 }

@@ -16,11 +16,19 @@ class Training extends Model
         'place',
         'amount',
         'canPaid',
-        'link'
+        'link',
     ];
     public function feed()
     {
         return $this->morphOne(Feed::class, 'feedable');
+    }
+    public function categories(): MorphMany
+    {
+        return $this->morphMany(Category::class, 'categorizable');
+    }
+    public function registrations()
+    {
+        return $this->morphMany(Registration::class, 'feed');
     }
 
 }

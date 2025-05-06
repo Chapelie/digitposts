@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TrainEvents Dashboard</title>
+    <title> Digitposts</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen flex flex-col md:flex-row">
@@ -11,7 +11,7 @@
 <div class="md:hidden flex items-center justify-between p-4 border-b">
     <div class="flex items-center gap-2">
         <div class="h-8 w-8 rounded-md bg-primary"></div>
-        <span class="text-xl font-bold">TrainEvents</span>
+        <span class="text-xl font-bold">Digitposts</span>
     </div>
     <button type="button" class="p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100" onclick="toggleSidebar()">
         <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -28,7 +28,7 @@
         <div class="p-4 border-b">
             <div class="flex items-center gap-2">
                 <div class="h-8 w-8 rounded-md bg-primary"></div>
-                <span class="text-xl font-bold">TrainEvents</span>
+                <span class="text-xl font-bold">Digitposts</span>
             </div>
         </div>
 
@@ -92,12 +92,12 @@
 <!-- Main content -->
 <div class="flex-1 md:ml-64 flex flex-col">
     <main class="flex-1 p-4 md:p-8">
-        {{ $slot }}
+        @yield('content')
     </main>
 </div>
 
 <!-- Mobile Navigation -->
-@include('components.mobile-navigation')
+{{--@include('components.mobile-navigation')--}}
 
 <!-- Backdrop for mobile sidebar -->
 <div id="sidebarBackdrop" class="hidden fixed inset-0 bg-black/50 z-40 md:hidden" onclick="toggleSidebar()"></div>

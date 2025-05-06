@@ -12,7 +12,7 @@
         <!-- Logo/Header -->
         <div class="flex justify-center mb-8">
             <a href="{{ url('/') }}">
-                <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+{{--                <x-application-logo class="w-20 h-20 fill-current text-gray-500" />--}}
             </a>
         </div>
 
