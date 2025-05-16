@@ -19,7 +19,10 @@
                 Faites Progresser Votre Carrière
             </h1>
             <p class="text-lg md:text-xl text-blue-100 max-w-3xl mx-auto mb-10">
-                Trouvez les opportunités parfaites pour apprendre, vous connecter et grandir avec notre sélection de formations et d'événements.
+                Plateforme dédiée à la diffusion d'information sur les formations et évènements au Burkina Faso.
+                Que vous soyez un Professionnels en quète d'opportunité, un étudiant à la recherche de formations,
+                ou une organisation souhaitant partager ses évènements, Diginov vous connecte aux informations
+                essentielles pour votre développement.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center max-w-3xl mx-auto">
                 <a href="#trainings" class="px-8 py-3 bg-white text-blue-600 rounded-lg text-lg font-semibold hover:bg-blue-50 transition duration-300">

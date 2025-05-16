@@ -71,11 +71,14 @@
                             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                         </svg>
                     </div>
-                    <span class="text-xl font-bold text-blue-600">TrainEvents</span>
+                    <span class="text-xl font-bold text-blue-600">DigiPost</span>
                 </div>
                 <p class="text-sm text-gray-600">
-                    La plateforme pour découvrir et créer des programmes de formation et événements exceptionnels.
-                </p>
+                Plateforme dédiée à la diffusion d'information sur les formations et évènements au Burkina Faso.
+                Que vous soyez un Professionnels en quète d'opportunité, un étudiant à la recherche de formations,
+                ou une organisation souhaitant partager ses évènements, Diginov vous connecte aux informations
+                essentielles pour votre développement.               
+             </p>
             </div>
             <div>
                 <h3 class="font-medium mb-3 text-blue-800">Plateforme</h3>
@@ -103,7 +106,7 @@
             </div>
         </div>
         <div class="mt-8 pt-8 border-t text-center text-sm text-gray-600">
-            &copy; {{ date('Y') }} TrainEvents. Tous droits réservés.
+            &copy; {{ date('Y') }} DigiPost. Tous droits réservés.
         </div>
     </div>
 </footer>

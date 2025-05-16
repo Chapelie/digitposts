@@ -5,8 +5,8 @@
 @section('content')
     <div class="bg-white shadow-md rounded-lg p-8">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-center text-gray-800 mb-2">Create an account</h1>
-            <p class="text-sm text-center text-gray-600">Enter your information to get started</p>
+            <h1 class="text-2xl font-bold text-center text-gray-800 mb-2">Crée un compte</h1>
+            <p class="text-sm text-center text-gray-600">Entrez vos information pour commencer</p>
         </div>
 
         <form method="POST" action="{{ route('register') }}" class="space-y-5">
@@ -14,7 +14,7 @@
             <!-- Name Fields -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">First name</label>
+                    <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
                     <input
                         id="first_name"
                         name="first_name"
@@ -28,7 +28,7 @@
                     @enderror
                 </div>
                 <div>
-                    <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Last name</label>
+                    <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
                     <input
                         id="last_name"
                         name="last_name"
@@ -60,7 +60,7 @@
 
             <!-- Password Field -->
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
                 <input
                     id="password"
                     name="password"
@@ -75,7 +75,7 @@
 
             <!-- Confirm Password Field -->
             <div>
-                <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-1">Confirmer le mot de passe</label>
                 <input
                     id="password_confirmation"
                     name="password_confirmation"
@@ -87,18 +87,18 @@
 
             <!-- User Type Selection -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">I want to</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Je désire</label>
                 <div class="space-y-2">
                     <div class="flex items-center">
                         <input id="visitor" name="user_type" type="radio" value="visitor" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300" checked>
                         <label for="visitor" class="ml-2 block text-sm text-gray-700">
-                            Register for campaigns (Visitor)
+                            M'inscrire à une campagne (Visiteur)
                         </label>
                     </div>
                     <div class="flex items-center">
                         <input id="creator" name="user_type" type="radio" value="creator" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
                         <label for="creator" class="ml-2 block text-sm text-gray-700">
-                            Create campaigns (Creator)
+                            Crée une campagne (Createur)
                         </label>
                     </div>
                 </div>
@@ -109,7 +109,7 @@
 
             <!-- Submit Button -->
             <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
-                Create Account
+                Crée le compte
             </button>
         </form>
 
@@ -120,7 +120,7 @@
                     <div class="w-full border-t border-gray-300"></div>
                 </div>
                 <div class="relative flex justify-center text-sm">
-                    <span class="px-2 bg-white text-gray-500">Or continue with</span>
+                    <span class="px-2 bg-white text-gray-500">Ou continuer avec</span>
                 </div>
             </div>
 
@@ -131,9 +131,9 @@
         <!-- Login Link -->
         <div class="mt-6 text-center">
             <p class="text-sm text-gray-600">
-                Already have an account?
+                Avez-vous déja un compte?
                 <a href="{{ route('login') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
-                    Sign in
+                    Se Connecter
                 </a>
             </p>
         </div>

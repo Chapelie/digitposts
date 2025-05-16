@@ -5,8 +5,8 @@
 @section('content')
     <div class="bg-white shadow-md rounded-lg p-8">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-center text-gray-800 mb-2">Sign in to your account</h1>
-            <p class="text-sm text-center text-gray-600">Enter your credentials to access your account</p>
+            <h1 class="text-2xl font-bold text-center text-gray-800 mb-2">Coonectez-vous à votre compte!</h1>
+            <p class="text-sm text-center text-gray-600">Entrez vos identifiants pour accéder à votre compte</p>
         </div>
 
         <form method="POST" action="{{ route('login') }}" class="space-y-5">
@@ -32,7 +32,7 @@
             <!-- Password Input -->
             <div>
                 <div class="flex items-center justify-between mb-1">
-{{--                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>--}}
+{{--                    <label for="password" class="block text-sm font-medium text-gray-700">Mot de passe</label>--}}
 {{--                    <a href="{{ route('password.request') }}" class="text-xs text-indigo-600 hover:underline">--}}
 {{--                        Forgot password?--}}
 {{--                    </a>--}}
@@ -52,12 +52,12 @@
             <!-- Remember Me -->
             <div class="flex items-center">
                 <input id="remember_me" name="remember" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                <label for="remember_me" class="ml-2 block text-sm text-gray-700">Remember me</label>
+                <label for="remember_me" class="ml-2 block text-sm text-gray-700">Se souvenir de moi!</label>
             </div>
 
             <!-- Submit Button -->
             <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
-                Sign In
+                Se Connecter
             </button>
         </form>
 
@@ -68,7 +68,7 @@
                     <div class="w-full border-t border-gray-300"></div>
                 </div>
                 <div class="relative flex justify-center text-sm">
-                    <span class="px-2 bg-white text-gray-500">Or continue with</span>
+                    <span class="px-2 bg-white text-gray-500">Ou continuer avec</span>
                 </div>
             </div>
 
@@ -83,9 +83,9 @@
         <!-- Registration Link -->
         <div class="mt-6 text-center">
             <p class="text-sm text-gray-600">
-                Don't have an account?
+                Pas de compte?
                 <a href="{{ route('register') }}" class="font-medium text-indigo-600 hover:text-indigo-500">
-                    Sign up
+                    S'inscrire
                 </a>
             </p>
         </div>
