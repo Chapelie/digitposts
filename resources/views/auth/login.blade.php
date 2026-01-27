@@ -1,6 +1,8 @@
 @extends('layouts.blanklayout')
 
-@section('title', 'Login')
+@php
+    $seoTitle = 'Login';
+@endphp
 
 @section('content')
     <div class="bg-white shadow-md rounded-lg p-8">

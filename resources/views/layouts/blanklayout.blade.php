@@ -5,7 +5,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     @include('components.seo-meta', [
-        'title' => $seoTitle ?? (@yield('title', 'DigitPosts')),
+        'title' => $seoTitle ?? 'DigitPosts',
         'description' => $seoDescription ?? 'Plateforme de formations et événements professionnels au Burkina Faso',
         'keywords' => $seoKeywords ?? 'formations, événements, Burkina Faso',
         'image' => $seoImage ?? null,

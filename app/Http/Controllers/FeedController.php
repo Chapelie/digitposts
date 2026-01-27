@@ -46,6 +46,16 @@ class FeedController extends Controller
                 });
             }
 
+            // Exclure les feeds dont la date est passée (event: start_date, formation: end_date ou start_date)
+            $query->where(function($q) {
+                $now = now();
+                $q->whereHasMorph('feedable', [Event::class], function($sub) use ($now) {
+                    $sub->where('start_date', '>=', $now);
+                })->orWhereHasMorph('feedable', [Training::class], function($sub) use ($now) {
+                    $sub->whereRaw('COALESCE(end_date, start_date) >= ?', [$now]);
+                });
+            });
+
             $publicFeeds = $query->latest()->get();
 
             // Separate events and trainings feeds

@@ -1,6 +1,8 @@
 @extends('layouts.blanklayout')
 
-@section('title', 'Réinitialiser le mot de passe')
+@php
+    $seoTitle = 'Réinitialiser le mot de passe';
+@endphp
 
 @section('content')
     <div class="bg-white shadow-md rounded-lg p-8">
