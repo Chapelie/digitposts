@@ -54,8 +54,8 @@
     <div class="w-full sm:max-w-md px-6 py-4">
         <!-- Logo/Header -->
         <div class="flex justify-center mb-8">
-            <a href="{{ url('/') }}">
-{{--                <x-application-logo class="w-20 h-20 fill-current text-gray-500" />--}}
+            <a href="{{ url('/') }}" class="block">
+                <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-12 w-auto object-contain mx-auto">
             </a>
         </div>
 

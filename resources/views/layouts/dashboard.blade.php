@@ -37,13 +37,7 @@
 <div class="md:hidden flex items-center justify-between p-4 border-b bg-white shadow-sm sticky top-0 z-40">
     <div class="flex items-center gap-2">
         <a href="{{ route('home') }}" class="flex items-center gap-2">
-            <div class="h-8 w-8 rounded-md bg-blue-600 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                </svg>
-            </div>
-            <span class="text-xl font-bold text-blue-600">DigitPosts</span>
+            <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-8 w-auto object-contain">
         </a>
     </div>
     <button type="button" class="p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 bg-white border border-gray-200 shadow-sm transition-all duration-200" onclick="toggleSidebar()" aria-label="Toggle menu">
@@ -60,13 +54,7 @@
     <div class="flex flex-col h-full">
         <div class="p-4 border-b border-gray-200 bg-white">
             <a href="{{ route('home') }}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div class="h-8 w-8 rounded-md bg-blue-600 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                    </svg>
-                </div>
-                <span class="text-xl font-bold text-blue-600">DigitPosts</span>
+                <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-8 w-auto object-contain">
             </a>
         </div>
 

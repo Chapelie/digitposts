@@ -65,15 +65,9 @@
 <body class="min-h-screen flex flex-col overflow-auto">
 <!-- Desktop Header -->
 <header class="hidden md:flex items-center justify-between p-4 border-b bg-white z-10">
-    <div class="flex items-center gap-2">
-        <div class="h-8 w-8 rounded-md bg-blue-600 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            </svg>
-        </div>
-        <span class="text-xl font-bold text-blue-600">Digitposts</span>
-    </div>
+    <a href="{{ url('/') }}" class="flex items-center gap-2">
+        <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-8 w-auto object-contain">
+    </a>
     <div class="flex items-center gap-4">
         @auth
             <a href="{{ route('user.favorites') }}" class="text-sm font-medium hover:text-blue-600 transition-colors flex items-center gap-1">
@@ -145,15 +139,9 @@
     <div class="container mx-auto">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-                <div class="flex items-center gap-2 mb-4">
-                    <div class="h-8 w-8 rounded-md bg-blue-600 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                        </svg>
-                    </div>
-                    <span class="text-xl font-bold text-blue-600">DigiPost</span>
-                </div>
+                <a href="{{ url('/') }}" class="inline-block mb-4">
+                    <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-8 w-auto object-contain">
+                </a>
                 <p class="text-sm text-gray-600">
                 Plateforme dédiée à la diffusion d'information sur les formations et évènements au Burkina Faso.
                 Que vous soyez un Professionnels en quète d'opportunité, un étudiant à la recherche de formations,
