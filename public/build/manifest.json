@@ -1,0 +1,20 @@
+{
+  "_vendor-BOzMbiTx.js": {
+    "file": "assets/vendor-BOzMbiTx.js",
+    "name": "vendor"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-CyiQa1y_.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-DaYM2ks5.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "_vendor-BOzMbiTx.js"
+    ]
+  }
+}
