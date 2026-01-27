@@ -10,4 +10,22 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    build: {
+        minify: 'terser',
+        terserOptions: {
+            compress: {
+                drop_console: true,
+                drop_debugger: true,
+            },
+        },
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['axios'],
+                },
+            },
+        },
+        cssCodeSplit: true,
+        sourcemap: false,
+    },
 });

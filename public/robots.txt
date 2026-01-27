@@ -1,2 +1,11 @@
 User-agent: *
-Disallow:
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /payments/
+Disallow: /inscriptions/*/create
+
+# Sitemap (will be dynamically generated)
+# Add your domain URL manually: Sitemap: https://yourdomain.com/sitemap.xml

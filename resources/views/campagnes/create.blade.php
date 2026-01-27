@@ -187,35 +187,49 @@
                         <div>
                             <h2 class="text-xl font-semibold mb-2">Catégories</h2>
                             <p class="text-gray-500">
-                                Ajoutez des catégories pour classer votre publication.
+                                Sélectionnez des catégories existantes ou créez-en de nouvelles pour classer votre publication.
                             </p>
                         </div>
 
-                        <!-- Sélection de catégories -->
-                        <div class="space-y-2">
-                            <label class="block text-sm font-medium text-gray-700">Type de catégorie</label>
-                            <select id="category-type" class="block w-full px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base">
-                                <option value="">Sélectionnez un type</option>
-                                <option value="theme">Thème</option>
-                                <option value="audience">Public cible</option>
-                                <option value="skill">Compétence</option>
-                            </select>
+                        <!-- Catégories existantes -->
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-medium text-gray-900">Catégories existantes</h3>
+                            @if($categories->count() > 0)
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    @foreach($categories as $category)
+                                        <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                            <input type="checkbox" name="categories[]" value="{{ $category->id }}" 
+                                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-3">
+                                            <div>
+                                                <span class="text-sm font-medium text-gray-900">{{ $category->name }}</span>
+                                                <span class="block text-xs text-gray-500">{{ ucfirst($category->type) }}</span>
+                                            </div>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-gray-500 text-sm">Aucune catégorie existante. Créez-en de nouvelles ci-dessous.</p>
+                            @endif
                         </div>
 
-                        <div class="space-y-2">
-                            <label for="category-name" class="block text-sm font-medium text-gray-700">Nom de la catégorie</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="category-name" placeholder="Entrez le nom de la catégorie"
+                        <!-- Créer de nouvelles catégories -->
+                        <div class="space-y-4 border-t pt-6">
+                            <h3 class="text-lg font-medium text-gray-900">Créer de nouvelles catégories</h3>
+                            <div class="space-y-2">
+                                <label for="new_categories" class="block text-sm font-medium text-gray-700">Nouvelles catégories</label>
+                                <input type="text" id="new_categories" name="new_categories" 
+                                       placeholder="Entrez les noms des catégories séparés par des virgules (ex: Marketing, Formation, Événement)"
                                        class="block w-full px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base">
-                                <button type="button" id="add-category-btn" class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                    Ajouter
-                                </button>
+                                <p class="text-xs text-gray-500">Séparez plusieurs catégories par des virgules. Elles seront automatiquement créées lors de la publication.</p>
                             </div>
                         </div>
 
-                        <!-- Liste des catégories ajoutées -->
-                        <div id="categories-container" class="space-y-2">
-                            <!-- Les catégories seront ajoutées dynamiquement ici -->
+                        <!-- Liste des catégories sélectionnées -->
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-medium text-gray-700">Catégories sélectionnées</h4>
+                            <div id="selected-categories" class="flex flex-wrap gap-2">
+                                <!-- Les catégories sélectionnées apparaîtront ici -->
+                            </div>
                         </div>
 
                         <div class="flex justify-end gap-4">
@@ -447,76 +461,78 @@
         });
 
         // Gestion des catégories
-        let categoryCounter = 0;
-        const addedCategories = new Set();
+        function updateSelectedCategories() {
+            const selectedContainer = document.getElementById('selected-categories');
+            selectedContainer.innerHTML = '';
 
-        document.getElementById('add-category-btn').addEventListener('click', function() {
-            const categoryType = document.getElementById('category-type').value;
-            const categoryName = document.getElementById('category-name').value.trim();
-
-            if (!categoryType || !categoryName) {
-                alert('Veuillez sélectionner un type et entrer un nom pour la catégorie');
-                return;
-            }
-
-            const categoryKey = `${categoryType}:${categoryName}`;
-            if (addedCategories.has(categoryKey)) {
-                alert('Cette catégorie a déjà été ajoutée');
-                return;
-            }
-
-            categoryCounter++;
-            addedCategories.add(categoryKey);
-
-            const categoryHtml = `
-                <div class="category-item flex items-center justify-between bg-gray-50 p-3 rounded-md" data-id="category-${categoryCounter}">
-                    <div>
-                        <span class="text-sm font-medium text-gray-700">${categoryType}:</span>
-                        <span class="text-sm text-gray-500 ml-1">${categoryName}</span>
-                        <input type="hidden" name="categories[${categoryCounter}][type]" value="${categoryType}">
-                        <input type="hidden" name="categories[${categoryCounter}][name]" value="${categoryName}">
-                    </div>
-                    <button type="button" class="remove-category text-red-600 hover:text-red-800">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
-                </div>
-            `;
-
-            document.getElementById('categories-container').insertAdjacentHTML('beforeend', categoryHtml);
-            document.getElementById('category-name').value = '';
-
-            // Gestion de la suppression
-            document.querySelector(`.category-item[data-id="category-${categoryCounter}"] .remove-category`).addEventListener('click', function() {
-                const categoryItem = this.closest('.category-item');
-                const categoryKey = `${categoryItem.querySelector('input[name$="[type]"]').value}:${categoryItem.querySelector('input[name$="[name]"]').value}`;
-                addedCategories.delete(categoryKey);
-                categoryItem.remove();
-                updatePreviewCategories();
+            // Catégories existantes sélectionnées
+            document.querySelectorAll('input[name="categories[]"]:checked').forEach(checkbox => {
+                const categoryName = checkbox.closest('label').querySelector('.text-gray-900').textContent;
+                const categoryType = checkbox.closest('label').querySelector('.text-gray-500').textContent;
+                
+                const badgeHtml = `
+                    <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                        ${categoryName} (${categoryType})
+                    </span>
+                `;
+                selectedContainer.insertAdjacentHTML('beforeend', badgeHtml);
             });
 
+            // Nouvelles catégories
+            const newCategoriesInput = document.getElementById('new_categories');
+            if (newCategoriesInput.value.trim()) {
+                const newCategories = newCategoriesInput.value.split(',').map(cat => cat.trim()).filter(cat => cat);
+                newCategories.forEach(categoryName => {
+                    const badgeHtml = `
+                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                            ${categoryName} (Nouveau)
+                        </span>
+                    `;
+                    selectedContainer.insertAdjacentHTML('beforeend', badgeHtml);
+                });
+            }
+
             updatePreviewCategories();
-        });
+        }
 
         // Mise à jour des catégories dans l'aperçu
         function updatePreviewCategories() {
             const previewContainer = document.getElementById('preview-categories');
             previewContainer.innerHTML = '';
 
-            document.querySelectorAll('.category-item').forEach(item => {
-                const type = item.querySelector('input[name$="[type]"]').value;
-                const name = item.querySelector('input[name$="[name]"]').value;
-
+            // Catégories existantes sélectionnées
+            document.querySelectorAll('input[name="categories[]"]:checked').forEach(checkbox => {
+                const categoryName = checkbox.closest('label').querySelector('.text-gray-900').textContent;
+                
                 const badgeHtml = `
                     <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                        ${type}: ${name}
+                        ${categoryName}
                     </span>
                 `;
                 previewContainer.insertAdjacentHTML('beforeend', badgeHtml);
             });
+
+            // Nouvelles catégories
+            const newCategoriesInput = document.getElementById('new_categories');
+            if (newCategoriesInput.value.trim()) {
+                const newCategories = newCategoriesInput.value.split(',').map(cat => cat.trim()).filter(cat => cat);
+                newCategories.forEach(categoryName => {
+                    const badgeHtml = `
+                        <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                            ${categoryName}
+                        </span>
+                    `;
+                    previewContainer.insertAdjacentHTML('beforeend', badgeHtml);
+                });
+            }
         }
+
+        // Écouteurs pour les catégories
+        document.querySelectorAll('input[name="categories[]"]').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedCategories);
+        });
+
+        document.getElementById('new_categories').addEventListener('input', updateSelectedCategories);
 
         // Initialisation des boutons d'onglet
         document.querySelectorAll('.tab-button').forEach(button => {

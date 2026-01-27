@@ -12,15 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('registrations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('feed_id')->constrained()->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->uuid('user_id');
+            $table->uuid('feed_id');
             $table->string('feed_type'); // App\Models\Training ou App\Models\Event
             $table->string('status')->default('pending');
             $table->string('payment_status')->default('pending');
             $table->decimal('amount_paid', 10, 2)->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
+
+            // Contraintes de clé étrangère
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('feed_id')->references('id')->on('feeds')->onDelete('cascade');
 
             // Index composite pour la relation polymorphique
             $table->index(['feed_id', 'feed_type']);

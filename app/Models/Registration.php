@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Registration extends Model
 {
+    use HasUuids;
+
     protected $fillable = [
         'user_id',
         'feed_id',
@@ -13,13 +16,26 @@ class Registration extends Model
         'status',
         'payment_status',
         'amount_paid',
-        'notes'
+        'notes',
+        'platform_registration',
+        'payment_method',
+        'registration_data',
+        'payment_transaction_id',
+        'payment_url',
+        'payment_date',
+        'payment_details',
     ];
 
-    // Relation polymorphique avec les campagnes (Training ou Event)
+    protected $casts = [
+        'platform_registration' => 'boolean',
+        'registration_data' => 'array',
+        'amount_paid' => 'decimal:2'
+    ];
+
+    // Relation avec le feed (campagne)
     public function feed()
     {
-        return $this->morphTo();
+        return $this->belongsTo(Feed::class, 'feed_id');
     }
 
     // Relation avec l'utilisateur qui s'inscrit
@@ -36,5 +52,5 @@ class Registration extends Model
     // Statuts de paiement
     public const PAYMENT_PENDING = 'pending';
     public const PAYMENT_PARTIAL = 'partial';
-    public const PAYMENT_COMPLETE = 'complete';
+    public const PAYMENT_PAID = 'paid';
 }
