@@ -65,8 +65,9 @@
 <body class="min-h-screen flex flex-col overflow-auto">
 <!-- Desktop Header -->
 <header class="hidden md:flex items-center justify-between p-4 border-b bg-white z-10">
-    <a href="{{ url('/') }}" class="flex items-center gap-2">
+    <a href="{{ url('/') }}" class="flex items-center gap-3">
         <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-8 w-auto object-contain">
+        <span class="text-xl font-bold text-blue-600">DigitPosts</span>
     </a>
     <div class="flex items-center gap-4">
         @auth
@@ -139,8 +140,9 @@
     <div class="container mx-auto">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-                <a href="{{ url('/') }}" class="inline-block mb-4">
+                <a href="{{ url('/') }}" class="inline-flex items-center gap-3 mb-4">
                     <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-8 w-auto object-contain">
+                    <span class="text-xl font-bold text-blue-600">DigitPosts</span>
                 </a>
                 <p class="text-sm text-gray-600">
                 Plateforme dédiée à la diffusion d'information sur les formations et évènements au Burkina Faso.

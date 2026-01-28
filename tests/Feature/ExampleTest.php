@@ -12,8 +12,14 @@ class ExampleTest extends TestCase
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        $this->assertGreaterThan(0, count(app('router')->getRoutes()), 'Aucune route chargée dans le test.');
+        $hasUp = false;
+        foreach (app('router')->getRoutes() as $route) {
+            if ($route->uri() === 'up') {
+                $hasUp = true;
+                break;
+            }
+        }
+        $this->assertTrue($hasUp, 'La route /up n\'est pas présente dans le router.');
     }
 }

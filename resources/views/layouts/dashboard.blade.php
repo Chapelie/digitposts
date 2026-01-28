@@ -5,7 +5,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     @include('components.seo-meta', [
-        'title' => $seoTitle ?? (@yield('title', 'Dashboard') . ' - DigitPosts'),
+        'title' => $seoTitle ?? 'Dashboard - DigitPosts',
         'description' => $seoDescription ?? 'Tableau de bord DigitPosts - Gérez vos formations, événements et inscriptions',
         'keywords' => $seoKeywords ?? 'dashboard, tableau de bord, DigitPosts',
         'image' => $seoImage ?? null,
@@ -36,8 +36,9 @@
 <!-- Mobile Header -->
 <div class="md:hidden flex items-center justify-between p-4 border-b bg-white shadow-sm sticky top-0 z-40">
     <div class="flex items-center gap-2">
-        <a href="{{ route('home') }}" class="flex items-center gap-2">
+        <a href="{{ route('home') }}" class="flex items-center gap-3">
             <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-8 w-auto object-contain">
+            <span class="text-xl font-bold text-blue-600">DigitPosts</span>
         </a>
     </div>
     <button type="button" class="p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 bg-white border border-gray-200 shadow-sm transition-all duration-200" onclick="toggleSidebar()" aria-label="Toggle menu">
@@ -53,8 +54,9 @@
 <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 -translate-x-full shadow-lg">
     <div class="flex flex-col h-full">
         <div class="p-4 border-b border-gray-200 bg-white">
-            <a href="{{ route('home') }}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <a href="{{ route('home') }}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
                 <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-8 w-auto object-contain">
+                <span class="text-xl font-bold text-blue-600">DigitPosts</span>
             </a>
         </div>
 

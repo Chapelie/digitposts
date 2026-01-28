@@ -54,8 +54,9 @@
     <div class="w-full sm:max-w-md px-6 py-4">
         <!-- Logo/Header -->
         <div class="flex justify-center mb-8">
-            <a href="{{ url('/') }}" class="block">
-                <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-12 w-auto object-contain mx-auto">
+            <a href="{{ url('/') }}" class="flex flex-col items-center gap-3">
+                <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-12 w-auto object-contain">
+                <span class="text-2xl font-bold text-blue-600">DigitPosts</span>
             </a>
         </div>
 

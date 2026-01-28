@@ -74,13 +74,31 @@
 {{--                        Forgot password?--}}
 {{--                    </a>--}}
                 </div>
-                <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    required
-                >
+                <div class="relative">
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        class="w-full px-4 py-2 pr-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        required
+                    >
+                    <button
+                        type="button"
+                        id="toggle-password"
+                        class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
+                        aria-label="Afficher le mot de passe"
+                    >
+                        <!-- Eye icon -->
+                        <svg id="icon-eye" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <!-- Eye off icon -->
+                        <svg id="icon-eye-off" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.269-2.943-9.543-7a10.056 10.056 0 012.234-3.592m3.09-2.272A9.956 9.956 0 0112 5c4.478 0 8.269 2.943 9.543 7a10.06 10.06 0 01-4.132 5.411M15 12a3 3 0 00-3-3m0 0a3 3 0 012.12.879M9.88 9.88A3 3 0 009 12a3 3 0 004.12 2.12M3 3l18 18" />
+                        </svg>
+                    </button>
+                </div>
                 @error('password')
                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -111,7 +129,7 @@
             </div>
 
             <div class="mt-6 grid grid-cols-1 gap-3">
-                <a href="{{ route('login.provider', 'google') }}" class="w-full inline-flex items-center justify-center py-3 px-4 border-2 border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors">
+                <a href="{{ \Illuminate\Support\Facades\Route::has('login.provider') ? route('login.provider', 'google') : '#' }}" class="w-full inline-flex items-center justify-center py-3 px-4 border-2 border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors">
                     <svg class="h-6 w-6 mr-3" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -133,4 +151,23 @@
             </p>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const input = document.getElementById('password');
+            const btn = document.getElementById('toggle-password');
+            const iconEye = document.getElementById('icon-eye');
+            const iconEyeOff = document.getElementById('icon-eye-off');
+
+            if (!input || !btn || !iconEye || !iconEyeOff) return;
+
+            btn.addEventListener('click', function () {
+                const isHidden = input.type === 'password';
+                input.type = isHidden ? 'text' : 'password';
+                iconEye.classList.toggle('hidden', isHidden);
+                iconEyeOff.classList.toggle('hidden', !isHidden);
+                btn.setAttribute('aria-label', isHidden ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+            });
+        });
+    </script>
 @endsection

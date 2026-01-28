@@ -9,21 +9,26 @@
                     <h1 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">Mes Campagnes</h1>
                     <p class="text-xl text-blue-100 mb-6">Gérez vos programmes de formation et événements avec facilité</p>
                     <div class="flex flex-wrap gap-4 text-sm">
+                        @php
+                            $validCampaigns = $campaigns->filter(function($feed) {
+                                return $feed->feedable !== null;
+                            });
+                        @endphp
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 bg-green-400 rounded-full"></div>
-                            <span>{{ $campaigns->where('status', 'publiée')->count() }} Publiées</span>
+                            <span>{{ $validCampaigns->where('status', 'publiée')->count() }} Publiées</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                            <span>{{ $campaigns->where('status', 'brouillon')->count() }} Brouillons</span>
+                            <span>{{ $validCampaigns->where('status', 'brouillon')->count() }} Brouillons</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 bg-blue-400 rounded-full"></div>
-                            <span>{{ $campaigns->filter(function($feed) { return $feed->feedable_type === 'App\Models\Training'; })->count() }} Formations</span>
+                            <span>{{ $validCampaigns->filter(function($feed) { return $feed->feedable_type === 'App\Models\Training'; })->count() }} Formations</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="w-3 h-3 bg-purple-400 rounded-full"></div>
-                            <span>{{ $campaigns->filter(function($feed) { return $feed->feedable_type === 'App\Models\Event'; })->count() }} Événements</span>
+                            <span>{{ $validCampaigns->filter(function($feed) { return $feed->feedable_type === 'App\Models\Event'; })->count() }} Événements</span>
                         </div>
                     </div>
                 </div>
@@ -100,13 +105,28 @@
         <!-- All Campaigns Tab -->
         <div id="all-campaigns" class="tab-content active space-y-8">
             @php
-                $trainings = $campaigns->filter(function($feed) {
+                // Filtrer les feeds qui ont un feedable valide
+                $validCampaigns = $campaigns->filter(function($feed) {
+                    return $feed->feedable !== null;
+                });
+                
+                $trainings = $validCampaigns->filter(function($feed) {
                     return $feed->feedable_type === 'App\Models\Training';
                 });
-                $events = $campaigns->filter(function($feed) {
+                $events = $validCampaigns->filter(function($feed) {
                     return $feed->feedable_type === 'App\Models\Event';
                 });
             @endphp
+
+            {{-- Debug temporaire --}}
+            @if(config('app.debug'))
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-sm">
+                    <strong>Debug:</strong> Total campaigns: {{ $campaigns->count() }}, 
+                    Valid: {{ $validCampaigns->count() }}, 
+                    Trainings: {{ $trainings->count() }}, 
+                    Events: {{ $events->count() }}
+                </div>
+            @endif
 
             <!-- Formations Section -->
             @if($trainings->count() > 0)
@@ -123,9 +143,10 @@
                     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         @foreach($trainings as $feed)
                             @php
+                                if (!$feed->feedable) continue; // Skip si feedable est null
                                 $campaign = $feed->feedable;
                                 $isUpcoming = \Carbon\Carbon::parse($campaign->start_date)->isFuture();
-                                $isPast = \Carbon\Carbon::parse($campaign->end_date)->isPast();
+                                $isPast = $campaign->end_date ? \Carbon\Carbon::parse($campaign->end_date)->isPast() : false;
                             @endphp
                             
                             <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 h-full flex flex-col overflow-hidden">
@@ -279,6 +300,7 @@
                     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         @foreach($events as $feed)
                             @php
+                                if (!$feed->feedable) continue; // Skip si feedable est null
                                 $campaign = $feed->feedable;
                                 $isUpcoming = \Carbon\Carbon::parse($campaign->start_date)->isFuture();
                                 $isPast = \Carbon\Carbon::parse($campaign->start_date)->isPast();
@@ -422,7 +444,7 @@
             @endif
 
             <!-- Empty State -->
-            @if($campaigns->count() === 0)
+            @if($validCampaigns->count() === 0)
                 <div class="text-center py-16">
                     <div class="mx-auto h-24 w-24 text-gray-400 mb-6">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -444,32 +466,88 @@
 
         <!-- Published Campaigns Tab -->
         <div id="published-campaigns" class="tab-content hidden space-y-4">
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                @foreach($campaigns->where('status', 'published') as $campaign)
-                    <!-- Same card structure as above -->
-                    @include('campaigns.partials.card', ['campaign' => $campaign])
-                @endforeach
-            </div>
+            @php
+                $publishedCampaigns = $validCampaigns->where('status', 'publiée');
+            @endphp
+            @if($publishedCampaigns->count() > 0)
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    @foreach($publishedCampaigns as $feed)
+                        @if($feed->feedable)
+                            @php
+                                $campaign = $feed->feedable;
+                                $isEvent = $feed->feedable_type === 'App\Models\Event';
+                            @endphp
+                            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                                <h3 class="font-bold text-lg mb-2">{{ $campaign->title }}</h3>
+                                <p class="text-sm text-gray-600">{{ $isEvent ? 'Événement' : 'Formation' }}</p>
+                                <a href="{{ route('campaigns.show', $feed->id) }}" class="text-blue-600 hover:underline mt-2 inline-block">Voir détails</a>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            @else
+                <div class="text-center py-8 text-gray-500">Aucune campagne publiée</div>
+            @endif
         </div>
 
         <!-- Draft Campaigns Tab -->
         <div id="draft-campaigns" class="tab-content hidden space-y-4">
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                @foreach($campaigns->where('status', 'draft') as $campaign)
-                    <!-- Same card structure as above -->
-                    @include('campaigns.partials.card', ['campaign' => $campaign])
-                @endforeach
-            </div>
+            @php
+                $draftCampaigns = $validCampaigns->where('status', 'brouillon');
+            @endphp
+            @if($draftCampaigns->count() > 0)
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    @foreach($draftCampaigns as $feed)
+                        @if($feed->feedable)
+                            @php
+                                $campaign = $feed->feedable;
+                                $isEvent = $feed->feedable_type === 'App\Models\Event';
+                            @endphp
+                            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                                <h3 class="font-bold text-lg mb-2">{{ $campaign->title }}</h3>
+                                <p class="text-sm text-gray-600">{{ $isEvent ? 'Événement' : 'Formation' }}</p>
+                                <a href="{{ route('campaigns.show', $feed->id) }}" class="text-blue-600 hover:underline mt-2 inline-block">Voir détails</a>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            @else
+                <div class="text-center py-8 text-gray-500">Aucun brouillon</div>
+            @endif
         </div>
 
         <!-- Closed Campaigns Tab -->
         <div id="closed-campaigns" class="tab-content hidden space-y-4">
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                @foreach($campaigns->where('status', 'closed') as $campaign)
-                    <!-- Same card structure as above -->
-                    @include('campaigns.partials.card', ['campaign' => $campaign])
-                @endforeach
-            </div>
+            @php
+                $closedCampaigns = $validCampaigns->filter(function($feed) {
+                    if (!$feed->feedable) return false;
+                    $campaign = $feed->feedable;
+                    if ($feed->feedable_type === 'App\Models\Training') {
+                        return $campaign->end_date && \Carbon\Carbon::parse($campaign->end_date)->isPast();
+                    } else {
+                        return \Carbon\Carbon::parse($campaign->start_date)->isPast();
+                    }
+                });
+            @endphp
+            @if($closedCampaigns->count() > 0)
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    @foreach($closedCampaigns as $feed)
+                        @if($feed->feedable)
+                            @php
+                                $campaign = $feed->feedable;
+                                $isEvent = $feed->feedable_type === 'App\Models\Event';
+                            @endphp
+                            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+                                <h3 class="font-bold text-lg mb-2">{{ $campaign->title }}</h3>
+                                <p class="text-sm text-gray-600">{{ $isEvent ? 'Événement' : 'Formation' }}</p>
+                                <a href="{{ route('campaigns.show', $feed->id) }}" class="text-blue-600 hover:underline mt-2 inline-block">Voir détails</a>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            @else
+                <div class="text-center py-8 text-gray-500">Aucune campagne terminée</div>
+            @endif
         </div>
     </div>
 

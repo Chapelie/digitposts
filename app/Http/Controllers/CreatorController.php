@@ -100,10 +100,19 @@ class CreatorController extends Controller{
     {
         $user = Auth::user();
 
-        $campaigns = Feed::with(['feedable', 'user', 'registrations'])
+        // Nettoyer le cache pour cet utilisateur pour avoir les données à jour
+        Cache::forget('creator_dashboard_' . $user->id);
+
+        $campaigns = Feed::with(['feedable.categories', 'user', 'registrations'])
             ->where('user_id', $user->id)
+            ->whereHasMorph('feedable', [Event::class, Training::class])
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Filtrer les feeds qui ont un feedable valide (sécurité supplémentaire)
+        $campaigns = $campaigns->filter(function($feed) {
+            return $feed->feedable !== null;
+        });
 
         // Récupérer toutes les catégories depuis la base de données (cached)
         $categories = Cache::remember('categories_list', 3600, function () {
@@ -217,12 +226,19 @@ class CreatorController extends Controller{
              ]);
              $feedable->feed()->save($feed);
 
-             // Nettoyer le cache des feeds
+             // Nettoyer le cache des feeds (tous les variants possibles)
              Cache::forget('feeds_index_' . md5(json_encode([])));
              Cache::forget('categories_list');
              Cache::forget('creator_dashboard_' . $user->id);
+             
+             // Nettoyer tous les caches de feeds_index possibles
+             $patterns = ['feeds_index_*'];
+             foreach ($patterns as $pattern) {
+                 Cache::flush(); // Plus simple : vider tout le cache
+                 break;
+             }
 
-             return redirect()->route('home')->with('success', 'Activity created successfully');
+             return redirect()->route('dashboard.campaigns')->with('success', 'Campagne créée avec succès !');
          }
 
     public function campaignRegistrations($uuid)
