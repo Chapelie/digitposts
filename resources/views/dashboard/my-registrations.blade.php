@@ -38,7 +38,7 @@
         $paidCount = $registrations->filter(fn($r) => $r->payment_status === 'paid')->count();
     @endphp
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -53,7 +53,7 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -68,7 +68,7 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -83,7 +83,7 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-lg shadow p-6">
+        <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -101,7 +101,7 @@
     </div>
 
     <!-- Filtres -->
-    <div class="bg-white rounded-lg shadow p-4">
+    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-4">
         <div class="flex flex-wrap gap-2">
             <button onclick="filterRegistrations('all')" 
                     class="filter-btn active px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white">
@@ -134,7 +134,7 @@
     @if($registrations->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($registrations as $registration)
-            <div class="registration-card bg-white rounded-lg shadow overflow-hidden" 
+            <div class="registration-card rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden" 
                  data-status="{{ $registration->status }}" 
                  data-payment-status="{{ $registration->payment_status }}">
                 <!-- Image -->
@@ -322,7 +322,7 @@
             {{ $registrations->links() }}
         </div>
     @else
-        <div class="text-center py-12 bg-white rounded-lg shadow">
+        <div class="text-center py-12 rounded-xl border border-gray-200 bg-white shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>

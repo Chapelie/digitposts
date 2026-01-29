@@ -1,5 +1,5 @@
 <!-- Composant mobile-nav -->
-<div class="md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white z-50" id="mobile-nav">
+<div class="md:hidden fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white shadow-sm z-50" id="mobile-nav">
     <div class="flex items-center justify-around h-16">
         <!-- Accueil -->
         <a href="/" class="nav-item flex flex-col items-center justify-center w-full h-full" data-page="home">
@@ -57,11 +57,11 @@
 
 <!-- Mobile Filters Overlay -->
 <div id="mobile-filters-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-    <div class="absolute bottom-16 left-0 right-0 bg-white rounded-t-2xl shadow-lg transform transition-transform duration-300">
+    <div class="absolute bottom-16 left-0 right-0 bg-white rounded-t-2xl border-t border-gray-200 shadow-sm transform transition-transform duration-300">
         <div class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">Filtrer par Catégorie</h3>
-                <button id="close-filters" class="p-2 rounded-full hover:bg-gray-100">
+                <button id="close-filters" class="p-2 rounded-full hover:bg-gray-100 border border-gray-200">
                     <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>

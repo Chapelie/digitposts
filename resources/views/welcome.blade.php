@@ -157,16 +157,17 @@
     </section>
 
     <!-- Filter Section -->
-    <section id="filter" class="py-4 bg-gray-50">
+    <section id="filter" class="py-6 bg-gray-100">
         <div class="container mx-auto px-4">
-            <div class="text-center mb-4">
-                <h2 class="text-xl font-bold text-gray-900 mb-2">Filtrer par Catégorie</h2>
-                <p class="text-sm text-gray-600">Trouvez les activités qui correspondent à vos intérêts</p>
-            </div>
+            <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
+                <div class="text-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Filtrer par Catégorie</h2>
+                    <p class="text-sm text-gray-600">Trouvez les activités qui correspondent à vos intérêts</p>
+                </div>
 
-            <!-- Desktop Filter -->
-            <div class="hidden md:block">
-                <div class="flex flex-wrap justify-center gap-2">
+                <!-- Desktop Filter -->
+                <div class="hidden md:block">
+                    <div class="flex flex-wrap justify-center gap-2">
                     <a href="{{ route('home') }}#activities" 
                        class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ !$selectedCategory && !$showFreeOnly ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
@@ -266,21 +267,22 @@
                     </div>
                 </div>
             </div>
+            </div>
         </div>
     </section>
 
     <!-- Activities Section -->
-    <section id="activities" class="py-16 bg-white">
+    <section id="activities" class="py-16 bg-gray-100">
         <div class="container mx-auto px-4">
             <!-- Trainings Section -->
             <div class="mb-16">
-                <div class="text-center mb-12">
+                <div class="text-center mb-8">
                     <h2 class="text-3xl font-bold text-gray-900 mb-4">Formations Disponibles</h2>
                     <div class="w-20 h-1 bg-gradient-to-r from-blue-600 to-blue-800 mx-auto"></div>
                 </div>
 
                 @if($trainingFeeds->isEmpty())
-                    <div class="text-center py-12">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm text-center py-12 px-6">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
@@ -293,7 +295,7 @@
                             @php $training = $feed->feedable; @endphp
                             @if($training)
                             <div class="group h-full">
-                                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                                <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden hover:shadow-md hover:border-gray-300 transition-all duration-300 h-full flex flex-col">
                                     @if($training->file)
                                         <div class="h-48 overflow-hidden flex-shrink-0">
                                             <img src="{{ asset('storage/' . $training->file) }}" 
@@ -376,7 +378,7 @@
                 </div>
 
                 @if($eventFeeds->isEmpty())
-                    <div class="text-center py-12">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm text-center py-12 px-6">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -389,7 +391,7 @@
                             @php $event = $feed->feedable; @endphp
                             @if($event)
                             <div class="group h-full">
-                                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                                <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden hover:shadow-md hover:border-gray-300 transition-all duration-300 h-full flex flex-col">
                                     @if($event->file)
                                         <div class="h-48 overflow-hidden flex-shrink-0">
                                             <img src="{{ asset('storage/' . $event->file) }}" 

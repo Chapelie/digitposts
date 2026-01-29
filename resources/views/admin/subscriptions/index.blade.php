@@ -19,7 +19,7 @@
         <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">{{ session('error') }}</div>
     @endif
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
         <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Recherche</label>
@@ -52,7 +52,7 @@
         </form>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-x-auto">
+    <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>

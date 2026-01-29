@@ -13,7 +13,7 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <dt class="text-sm font-medium text-gray-500">ID</dt>

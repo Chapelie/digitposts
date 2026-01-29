@@ -24,7 +24,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Sidebar Navigation -->
         <div class="lg:col-span-1">
-            <nav class="space-y-1">
+            <nav class="rounded-xl border border-gray-200 bg-white shadow-sm p-4 space-y-1">
                 <a href="#profile" class="settings-nav-item active flex items-center px-4 py-2 text-sm font-medium rounded-md" data-tab="profile">
                     <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -53,7 +53,7 @@
                 
                 <!-- Profile Tab -->
                 <div id="profile" class="settings-tab active space-y-6">
-                    <div class="bg-white rounded-lg shadow p-6">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-6">Informations du profil</h3>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -135,7 +135,7 @@
 
                 <!-- Security Tab -->
                 <div id="security" class="settings-tab hidden space-y-6">
-                    <div class="bg-white rounded-lg shadow p-6">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-6">Sécurité</h3>
                         
                         <div class="space-y-6">
@@ -188,7 +188,7 @@
 
                 <!-- Notifications Tab -->
                 <div id="notifications" class="settings-tab hidden space-y-6">
-                    <div class="bg-white rounded-lg shadow p-6">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-6">Préférences de notifications</h3>
                         
                         <div class="space-y-4">

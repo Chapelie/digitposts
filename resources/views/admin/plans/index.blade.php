@@ -21,7 +21,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         @foreach($plans as $plan)
-            <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
                 <div class="p-6">
                     <div class="flex items-start justify-between">
                         <div>
@@ -62,7 +62,7 @@
     </div>
 
     @if($plans->isEmpty())
-        <div class="bg-white rounded-lg shadow p-12 text-center text-gray-500">
+        <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-12 text-center text-gray-500">
             Aucun plan d'abonnement. Exécutez <code class="bg-gray-100 px-2 py-1 rounded">php artisan db:seed --class=SubscriptionPlanSeeder</code>.
         </div>
     @endif

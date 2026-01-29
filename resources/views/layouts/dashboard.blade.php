@@ -17,18 +17,31 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         body {
-            background-color: #f9fafb;
+            background-color: #f3f4f6;
         }
         
-        /* Sidebar styling */
+        /* Sidebar: même style partout */
         #sidebar {
             background-color: #ffffff;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+            border-right: 1px solid #e5e7eb;
+            box-shadow: 1px 0 4px rgba(0, 0, 0, 0.04);
         }
         
-        /* Main content area */
+        /* Zone principale: même style que la sidebar */
+        .dashboard-main-wrapper {
+            box-shadow: -1px 0 4px rgba(0, 0, 0, 0.04);
+        }
+        
         main {
             background-color: #f9fafb;
+        }
+        
+        /* Cartes dashboard: même style que la sidebar (blanc, bordure légère, ombre douce) */
+        .dashboard-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
@@ -76,7 +89,7 @@
 </div>
 
 <!-- Sidebar for desktop -->
-<div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 -translate-x-full shadow-lg">
+<div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 flex-shrink-0 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 -translate-x-full shadow-sm">
     <div class="flex flex-col h-full">
         <div class="p-4 border-b border-gray-200 bg-white">
             <a href="{{ route('home') }}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -198,9 +211,9 @@
 </div>
 
 <!-- Main content -->
-<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<div class="dashboard-main-wrapper flex-1 flex flex-col min-h-screen min-w-0 bg-white border-l border-gray-200">
     <main class="flex-1 p-4 md:p-6 lg:p-8 bg-gray-50">
-        <div class="max-w-7xl mx-auto">
+        <div class="max-w-6xl w-full mx-auto">
             @yield('content')
         </div>
     </main>

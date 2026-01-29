@@ -15,7 +15,7 @@
         </a>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-x-auto">
+    <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>

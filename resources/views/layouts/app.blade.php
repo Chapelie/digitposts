@@ -49,22 +49,51 @@
             background-color: rgba(249, 250, 251, 0.9) !important;
         }
         
-        /* Header avec effet de verre */
+        /* Header - style cohérent avec le dashboard */
         header {
             background-color: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         
-        /* Footer avec effet de verre */
+        /* Footer - style cohérent */
         footer {
             background-color: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(10px);
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        /* Style unifié pour les cartes sur la page d'accueil */
+        .home-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .home-card:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border-color: #d1d5db;
+        }
+        
+        /* Dropdown menu styling */
+        #user-menu {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Sections avec fond gris clair */
+        .bg-gray-100 {
+            background-color: rgba(243, 244, 246, 0.9) !important;
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col overflow-auto">
 <!-- Desktop Header -->
-<header class="hidden md:flex items-center justify-between p-4 border-b bg-white z-10">
+<header class="hidden md:flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm z-10">
     <a href="{{ url('/') }}" class="flex items-center gap-3">
         <img src="{{ asset('asset/logo.jpg') }}" alt="DigitPosts" class="h-8 w-auto object-contain">
         <span class="text-xl font-bold text-blue-600">DigitPosts</span>
@@ -103,7 +132,7 @@
                     </span>
                 </button>
                 <!-- Dropdown menu -->
-                <div id="user-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 hidden">
+                <div id="user-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-xl border border-gray-200 shadow-sm py-1 z-20 hidden">
                     <a href="{{ route('user.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -155,7 +184,7 @@
 </main>
 
 <!-- Footer -->
-<footer class="border-t py-8 px-4 bg-white">
+<footer class="py-8 px-4 bg-white border-t border-gray-200">
     <div class="container mx-auto">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>

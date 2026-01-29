@@ -17,7 +17,7 @@
         <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">{{ session('success') }}</div>
     @endif
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
         <form method="POST" action="{{ route('admin.subscriptions.update', $subscription) }}" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @csrf
             @method('PUT')
