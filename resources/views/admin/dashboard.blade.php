@@ -15,6 +15,12 @@
                 <a href="{{ route('admin.activities') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
                     Gérer les activités
                 </a>
+                <a href="{{ route('admin.plans.index') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                    Plans (montants)
+                </a>
+                <a href="{{ route('admin.subscriptions.index') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                    Gérer les abonnements
+                </a>
             </div>
         </div>
 
@@ -83,6 +89,86 @@
                 <div class="p-6 pt-0">
                     <div class="text-2xl font-bold text-orange-600">{{ $totalRegistrations }}</div>
                     <p class="text-xs text-gray-500">Inscriptions totales</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Business -->
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-xl border bg-white shadow-sm">
+                <div class="flex flex-row items-center justify-between p-6 pb-2">
+                    <h3 class="text-sm font-medium">Abonnements actifs</h3>
+                    <span class="text-xs text-gray-400">(% users)</span>
+                </div>
+                <div class="p-6 pt-0">
+                    <div class="text-2xl font-bold text-blue-600">{{ $kpis['subscriptionsActive'] }}</div>
+                    <p class="text-xs text-gray-500">{{ $kpis['subscriptionPenetration'] }}% des utilisateurs ({{ $kpis['activeSubscribersUsers'] }})</p>
+                </div>
+            </div>
+
+            <div class="rounded-xl border bg-white shadow-sm">
+                <div class="flex flex-row items-center justify-between p-6 pb-2">
+                    <h3 class="text-sm font-medium">Revenus total</h3>
+                    <span class="text-xs text-gray-400">subs + inscriptions</span>
+                </div>
+                <div class="p-6 pt-0">
+                    <div class="text-2xl font-bold text-green-600">{{ number_format((float)$kpis['totalRevenueTotal'], 0, ',', ' ') }} XOF</div>
+                    <p class="text-xs text-gray-500">Abonnements: {{ number_format((float)$kpis['subscriptionsRevenueTotal'], 0, ',', ' ') }} • Inscriptions: {{ number_format((float)$kpis['registrationsRevenueTotal'], 0, ',', ' ') }}</p>
+                </div>
+            </div>
+
+            <div class="rounded-xl border bg-white shadow-sm">
+                <div class="flex flex-row items-center justify-between p-6 pb-2">
+                    <h3 class="text-sm font-medium">Revenus (30 jours)</h3>
+                    <span class="text-xs text-gray-400">tendance</span>
+                </div>
+                <div class="p-6 pt-0">
+                    <div class="text-2xl font-bold text-purple-600">{{ number_format((float)$kpis['totalRevenue30d'], 0, ',', ' ') }} XOF</div>
+                    <p class="text-xs text-gray-500">Subs: {{ number_format((float)$kpis['subscriptionsRevenue30d'], 0, ',', ' ') }} • Inscriptions: {{ number_format((float)$kpis['registrationsRevenue30d'], 0, ',', ' ') }}</p>
+                </div>
+            </div>
+
+            <div class="rounded-xl border bg-white shadow-sm">
+                <div class="flex flex-row items-center justify-between p-6 pb-2">
+                    <h3 class="text-sm font-medium">Inscriptions payées</h3>
+                    <span class="text-xs text-gray-400">conversion</span>
+                </div>
+                <div class="p-6 pt-0">
+                    <div class="text-2xl font-bold text-orange-600">{{ $kpis['registrationsPaidTotal'] }}</div>
+                    <p class="text-xs text-gray-500">{{ $kpis['registrationPaidRate'] }}% des inscriptions</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Contenu -->
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div class="rounded-xl border bg-white shadow-sm">
+                <div class="flex flex-row items-center justify-between p-6 pb-2">
+                    <h3 class="text-sm font-medium">Publications publiées</h3>
+                </div>
+                <div class="p-6 pt-0">
+                    <div class="text-2xl font-bold text-blue-600">{{ $kpis['publishedFeeds'] }}</div>
+                    <p class="text-xs text-gray-500">Brouillons: {{ $kpis['draftFeeds'] }}</p>
+                </div>
+            </div>
+
+            <div class="rounded-xl border bg-white shadow-sm">
+                <div class="flex flex-row items-center justify-between p-6 pb-2">
+                    <h3 class="text-sm font-medium">Total abonnements</h3>
+                </div>
+                <div class="p-6 pt-0">
+                    <div class="text-2xl font-bold text-green-600">{{ $kpis['subscriptionsTotal'] }}</div>
+                    <p class="text-xs text-gray-500">Historique</p>
+                </div>
+            </div>
+
+            <div class="rounded-xl border bg-white shadow-sm p-6 md:col-span-2 lg:col-span-2">
+                <h3 class="text-sm font-medium mb-2">Accès rapide</h3>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('admin.subscriptions.index') }}" class="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Abonnements</a>
+                    <a href="{{ route('admin.users') }}" class="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Utilisateurs</a>
+                    <a href="{{ route('admin.activities') }}" class="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Activités</a>
+                    <a href="{{ route('admin.registrations') }}" class="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Inscriptions</a>
                 </div>
             </div>
         </div>

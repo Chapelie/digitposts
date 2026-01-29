@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendRegistrationNotificationJob;
 use App\Models\Feed;
 use App\Models\Registration;
 use App\Models\User;
+use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
+use App\Services\CacheService;
 
 class InscriptionController extends Controller
 {
@@ -23,9 +26,12 @@ class InscriptionController extends Controller
                 ->with('error', 'Vous devez être connecté pour vous inscrire à cette activité.');
         }
 
-        $feed = Feed::where('id', $uuid)
-            ->with(['feedable.categories', 'user'])
-            ->firstOrFail();
+        // Eager loading complet pour éviter N+1
+        $feed = CacheService::remember('feed_' . $uuid, function () use ($uuid) {
+            return Feed::where('id', $uuid)
+                ->with(['feedable.categories', 'user', 'registrations'])
+                ->firstOrFail();
+        }, CacheService::TTL_SHORT);
         
         // Vérifier si l'utilisateur est déjà inscrit (optimisé avec index)
         $existingRegistration = Registration::where('user_id', Auth::id())
@@ -35,6 +41,24 @@ class InscriptionController extends Controller
         if ($existingRegistration) {
             return redirect()->route('campaigns.show', $feed->id)
                 ->with('error', 'Vous êtes déjà inscrit à cette activité.');
+        }
+
+        // Vérifier si l'activité est gratuite et si l'utilisateur a un abonnement actif
+        $feedable = $feed->feedable;
+        $isFree = false;
+        
+        if ($feedable instanceof \App\Models\Event) {
+            $isFree = $feedable->amount <= 0;
+        } elseif ($feedable instanceof \App\Models\Training) {
+            $isFree = !$feedable->canPaid || $feedable->amount <= 0;
+        }
+
+        // Si l'activité est gratuite, vérifier l'abonnement "accès événements gratuits"
+        if ($isFree) {
+            if (!Subscription::hasActiveSubscription(Auth::id(), SubscriptionPlan::TYPE_FREE_EVENTS)) {
+                return redirect()->route('subscriptions.checkout', ['plan' => 'free_events'])
+                    ->with('error', 'Vous devez avoir un abonnement actif pour accéder aux événements gratuits.');
+            }
         }
 
         // Récupérer les informations de l'utilisateur connecté
@@ -84,6 +108,26 @@ class InscriptionController extends Controller
                 }
                 return redirect()->route('campaigns.show', $feed->id)
                     ->with('error', 'Vous êtes déjà inscrit à cette activité.');
+            }
+
+            // Vérifier si l'activité est gratuite et si l'utilisateur a un abonnement actif
+            $isFree = false;
+            if ($feedable instanceof \App\Models\Event) {
+                $isFree = $feedable->amount <= 0;
+            } elseif ($feedable instanceof \App\Models\Training) {
+                $isFree = !$feedable->canPaid || $feedable->amount <= 0;
+            }
+
+            if ($isFree && !Subscription::hasActiveSubscription($user->id, SubscriptionPlan::TYPE_FREE_EVENTS)) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Vous devez avoir un abonnement actif pour accéder aux événements gratuits.',
+                        'redirect' => route('subscriptions.checkout', ['plan' => 'free_events']),
+                    ], 403);
+                }
+                return redirect()->route('subscriptions.checkout', ['plan' => 'free_events'])
+                    ->with('error', 'Vous devez avoir un abonnement actif pour accéder aux événements gratuits.');
             }
 
             // Utiliser les informations de l'utilisateur connecté si les champs sont vides
@@ -137,8 +181,10 @@ class InscriptionController extends Controller
 
             DB::commit();
 
-            // Nettoyer le cache si nécessaire
-            Cache::forget('creator_dashboard_' . $feed->user_id);
+            // Nettoyer le cache
+            CacheService::clearUserCache($feed->user_id);
+            CacheService::clearUserCache($user->id);
+            CacheService::forget('feed_' . $feed->id);
 
             if ($feedable->is_free) {
                 $message = 'Inscription confirmée avec succès !';
@@ -178,32 +224,18 @@ class InscriptionController extends Controller
         }
     }
 
-    private function notifyOwner($feed, $registration)
+    private function notifyOwner($feed, $registration): void
     {
         $owner = $feed->user;
-        $participant = Auth::user();
         $activity = $feed->feedable;
-
-        // Envoyer un email au propriétaire
-        try {
-            Mail::send('emails.new-registration', [
-                'owner' => $owner,
-                'participant' => $participant,
-                'activity' => $activity,
-                'registration' => $registration
-            ], function ($message) use ($owner, $activity) {
-                $message->to($owner->email)
-                        ->subject('Nouvelle inscription - ' . $activity->title);
-            });
-        } catch (\Exception $e) {
-            // Log l'erreur mais ne pas faire échouer l'inscription
-            \Log::error('Erreur envoi email notification: ' . $e->getMessage());
+        if (!$owner || !$activity) {
+            return;
         }
-
-        // Ici vous pourriez ajouter d'autres types de notifications
-        // - Notifications push
-        // - SMS
-        // - Notifications en base de données
+        SendRegistrationNotificationJob::dispatch(
+            $registration,
+            $owner->email,
+            $activity->title
+        );
     }
 
     private function updateUserProfile($request, $user)
@@ -230,8 +262,9 @@ class InscriptionController extends Controller
 
     public function index()
     {
+        // Eager loading complet pour éviter N+1
         $registrations = Registration::where('user_id', Auth::id())
-            ->with(['feed.feedable', 'feed.user'])
+            ->with(['feed.feedable.categories', 'feed.user', 'user'])
             ->latest()
             ->paginate(10);
 
@@ -244,6 +277,9 @@ class InscriptionController extends Controller
         if ($registration->user_id !== Auth::id()) {
             abort(403);
         }
+
+        // Eager loading pour la vue détail
+        $registration->load(['feed.feedable.categories', 'feed.user', 'user']);
 
         return view('inscriptions.show', compact('registration'));
     }

@@ -3,6 +3,31 @@
 @section('title', 'DigitPosts - Formations & Événements Professionnels')
 
 @section('content')
+    {{-- Barre "Mise en ligne" après publication --}}
+    @if(session('offer_published'))
+    <div id="offer-published-bar" class="relative z-40 flex items-center justify-between gap-4 px-4 py-3 bg-green-600 text-white shadow-md animate-fade-in-down">
+        <div class="flex items-center gap-3 min-w-0">
+            <span class="flex-shrink-0 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+            </span>
+            <p class="text-sm font-medium truncate">Votre offre a été mise en ligne avec succès.</p>
+        </div>
+        <button type="button" onclick="document.getElementById('offer-published-bar').remove()" class="flex-shrink-0 p-1.5 rounded-md hover:bg-white/20 transition-colors" aria-label="Fermer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+    <script>
+        (function() {
+            var bar = document.getElementById('offer-published-bar');
+            if (bar) setTimeout(function() { bar.remove(); }, 6000);
+        })();
+    </script>
+    @endif
+
     <!-- Hero Section with Swiper Background -->
     <section class="relative bg-white text-gray-900 overflow-hidden min-h-[600px] md:min-h-[700px] flex items-center">
         @if(isset($swiperEvents) && $swiperEvents->count() > 0)
@@ -105,10 +130,27 @@
                         <div class="text-xl md:text-2xl font-bold text-green-600 mb-0.5">{{ $upcomingCount }}</div>
                         <div class="text-xs text-gray-700 font-medium">À Venir</div>
                     </div>
-                    <a href="{{ route('home', ['free' => 'true']) }}#activities" class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group">
-                        <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
-                        <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
-                    </a>
+                    @auth
+                        @php
+                            $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
+                        @endphp
+                        @if($hasActiveSubscription)
+                            <a href="{{ route('home', ['free' => 'true']) }}#activities" class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                                <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
+                                <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
+                            </a>
+                        @else
+                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                                <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
+                                <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
+                            </a>
+                        @endif
+                    @else
+                        <a href="{{ route('login') }}" class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                            <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
+                            <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
+                        </a>
+                    @endauth
                 </div>
             </div>
         </div>
@@ -137,11 +179,30 @@
                             {{ $category->name }}
                         </a>
                     @endforeach
-                    <a href="{{ route('home', ['free' => 'true']) }}#activities" 
-                       class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ $showFreeOnly ? 'bg-green-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-green-50 hover:shadow-md' }}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-                        Gratuites uniquement
-                    </a>
+                    @auth
+                        @php
+                            $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
+                        @endphp
+                        @if($hasActiveSubscription)
+                            <a href="{{ route('home', ['free' => 'true']) }}#activities" 
+                               class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ $showFreeOnly ? 'bg-green-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-green-50 hover:shadow-md' }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
+                                Gratuites uniquement
+                            </a>
+                        @else
+                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" 
+                               class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow bg-white text-gray-700 hover:bg-green-50 hover:shadow-md">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
+                                Gratuites uniquement
+                            </a>
+                        @endif
+                    @else
+                        <a href="{{ route('login') }}" 
+                           class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow bg-white text-gray-700 hover:bg-green-50 hover:shadow-md">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
+                            Gratuites uniquement
+                        </a>
+                    @endauth
                 </div>
             </div>
 
@@ -177,11 +238,30 @@
                                     {{ $category->name }}
                                 </a>
                             @endforeach
-                            <a href="{{ route('home', ['free' => 'true']) }}#activities" 
-                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2 {{ $showFreeOnly ? 'bg-green-50 text-green-600' : '' }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-                                Gratuites uniquement
-                            </a>
+                            @auth
+                                @php
+                                    $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
+                                @endphp
+                                @if($hasActiveSubscription)
+                                    <a href="{{ route('home', ['free' => 'true']) }}#activities" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2 {{ $showFreeOnly ? 'bg-green-50 text-green-600' : '' }}">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
+                                        Gratuites uniquement
+                                    </a>
+                                @else
+                                    <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
+                                        Gratuites uniquement
+                                    </a>
+                                @endif
+                            @else
+                                <a href="{{ route('login') }}" 
+                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
+                                    Gratuites uniquement
+                                </a>
+                            @endauth
                         </div>
                     </div>
                 </div>
@@ -304,7 +384,7 @@
                         <p class="text-gray-500 max-w-md mx-auto">Nous n'avons aucun événement programmé pour le moment. Revenez plus tard !</p>
                     </div>
                 @else
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         @foreach($eventFeeds as $feed)
                             @php $event = $feed->feedable; @endphp
                             @if($event)
@@ -352,13 +432,13 @@
                                                 <span class="truncate block min-w-0" title="{{ \Carbon\Carbon::parse($event->start_date)->format('d/m/Y H:i') }}">{{ \Carbon\Carbon::parse($event->start_date)->format('d/m/y H:i') }}</span>
                                             </div>
 
-                                            @if($event->location)
+                                            @if(!empty($event->location))
                                                 <div class="flex items-center text-sm text-gray-500 min-w-0 overflow-hidden">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     </svg>
-                                                    <span class="truncate block min-w-0">{{ $event->location }} @if($event->place)({{ $event->place }})@endif</span>
+                                                    <span class="truncate block min-w-0">{{ $event->location }}</span>
                                                 </div>
                                             @endif
                                         </div>

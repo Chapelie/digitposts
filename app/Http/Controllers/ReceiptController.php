@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendReceiptEmailJob;
 use App\Models\Registration;
-use App\Services\ReceiptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -76,18 +76,12 @@ class ReceiptController extends Controller
             return back()->with('error', 'Aucun reçu pour cette inscription.');
         }
 
-        $sent = app(ReceiptService::class)->sendReceiptEmail($registration);
-        if (!$sent) {
-            if ($request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => 'Impossible d\'envoyer l\'email.'], 500);
-            }
-            return back()->with('error', 'Impossible d\'envoyer le reçu par email.');
-        }
-
+        SendReceiptEmailJob::dispatch($registration);
         $user = $registration->user;
+        $msg = 'Le reçu sera envoyé à ' . $user->email;
         if ($request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Reçu envoyé à ' . $user->email]);
+            return response()->json(['success' => true, 'message' => $msg]);
         }
-        return back()->with('success', 'Reçu envoyé à ' . $user->email);
+        return back()->with('success', $msg);
     }
 }

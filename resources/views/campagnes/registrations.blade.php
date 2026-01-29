@@ -3,17 +3,30 @@
 @section('content')
 <div class="space-y-8">
     <!-- Header Section -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <h1 class="text-3xl font-bold tracking-tight mb-2">Inscriptions - {{ $feed->feedable->title }}</h1>
             <p class="text-gray-500">Gérez les inscriptions pour cette campagne</p>
         </div>
-        <a href="{{ route('campaigns.index') }}" class="inline-flex items-center text-sm text-gray-500 hover:text-gray-900">
-            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-            Retour aux campagnes
-        </a>
+        <div class="flex items-center gap-3">
+            @if($registrations->count() > 0)
+                <a href="{{ route('campaigns.registrations.export-pdf', $feed->id) }}" 
+                   class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Exporter en PDF
+                </a>
+            @endif
+            <a href="{{ route('campaigns.index') }}" class="inline-flex items-center px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Retour aux campagnes
+            </a>
+        </div>
     </div>
 
     <!-- Statistiques -->

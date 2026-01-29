@@ -6,9 +6,13 @@ use App\Models\Event;
 use App\Models\Training;
 use App\Models\Feed;
 use App\Models\Category;
+use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
+use App\Services\CacheService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class FeedController extends Controller
@@ -16,11 +20,26 @@ class FeedController extends Controller
 
     public function index(Request $request)
     {
-        // Cache key basé sur les paramètres de requête
-        $cacheKey = 'feeds_index_' . md5(json_encode($request->only(['category', 'free'])));
+        // Si on demande "Gratuites", il faut être connecté + abonné
+        $showFreeOnly = $request->has('free') && $request->free === 'true';
+        if ($showFreeOnly) {
+            if (!Auth::check()) {
+                session(['url.intended' => route('home', ['free' => 'true'])]);
+                return redirect()->route('login')
+                    ->with('error', 'Vous devez être connecté et avoir un abonnement actif pour accéder aux événements gratuits.');
+            }
+
+            if (!Subscription::hasActiveSubscription(Auth::id(), SubscriptionPlan::TYPE_FREE_EVENTS)) {
+                return redirect()->route('subscriptions.checkout', ['plan' => 'free_events'])
+                    ->with('error', 'Vous devez avoir un abonnement actif pour accéder aux événements gratuits.');
+            }
+        }
+
+        // Cache key basé sur les paramètres de requête - TTL augmenté à 10 minutes
+        $cacheKey = CacheService::feedsKey($request->only(['category', 'free']));
         
-        // Récupérer depuis le cache ou exécuter la requête
-        $data = Cache::remember($cacheKey, 300, function () use ($request) {
+        // Récupérer depuis le cache ou exécuter la requête (10 minutes)
+        $data = CacheService::remember($cacheKey, function () use ($request) {
             $query = Feed::where('isPrivate', false)
                 ->where('status', 'publiée')
                 ->with(['feedable.categories', 'user']);
@@ -56,7 +75,8 @@ class FeedController extends Controller
                 });
             });
 
-            $publicFeeds = $query->latest()->get();
+            $limit = config('scaling.limits.feeds_homepage', 200);
+            $publicFeeds = $query->latest()->limit($limit)->get();
 
             // Separate events and trainings feeds
             $eventFeeds = $publicFeeds->filter(function($feed) {
@@ -100,16 +120,18 @@ class FeedController extends Controller
                 'trainingFeeds' => $trainingFeeds,
                 'upcomingCount' => $upcomingCount,
                 'freeCount' => $freeCount,
-                'selectedCategory' => $selectedCategory,
-                'showFreeOnly' => $showFreeOnly,
                 'swiperEvents' => $swiperEvents
             ];
         });
 
-        // Get all categories for filter (cached)
-        $categories = Cache::remember('categories_list', 3600, function () {
+        // Ces variables dépendent de la requête, pas du cache
+        $selectedCategory = $request->get('category');
+        $showFreeOnly = $request->has('free') && $request->free === 'true';
+
+        // Get all categories for filter (cached for 24 hours)
+        $categories = CacheService::remember('categories_list', function () {
             return Category::distinct()->get(['id', 'name', 'type']);
-        });
+        }, CacheService::TTL_DAY);
 
         // SEO Data
         $swiperEvents = $data['swiperEvents'] ?? collect();
@@ -132,7 +154,9 @@ class FeedController extends Controller
         ];
 
         return view('welcome', array_merge($data, $seoData, [
-            'categories' => $categories
+            'categories' => $categories,
+            'selectedCategory' => $selectedCategory,
+            'showFreeOnly' => $showFreeOnly,
         ]));
     }
 
@@ -167,15 +191,18 @@ class FeedController extends Controller
 
         $feedable->feed()->save($feed);
 
-        // Nettoyer le cache
-        Cache::flush(); // Ou plus spécifique : Cache::tags(['feeds'])->flush();
+        // Nettoyer le cache des feeds
+        CacheService::clearFeedsCache();
 
         return redirect()->route('feeds.index')->with('success', 'Activity created successfully');
     }
 
     public function show($uuid)
     {
-        $feed = Feed::where('id', $uuid)->with(['feedable.categories', 'user'])->firstOrFail();
+        // Cache le feed pendant 5 minutes
+        $feed = CacheService::remember('feed_' . $uuid, function () use ($uuid) {
+            return Feed::where('id', $uuid)->with(['feedable.categories', 'user'])->firstOrFail();
+        }, CacheService::TTL_SHORT);
         
         // SEO Data
         $feedable = $feed->feedable;
@@ -230,9 +257,9 @@ class FeedController extends Controller
             'status' => $request->status ?? $feed->status
         ]);
 
-        // Nettoyer le cache
-        Cache::forget('feeds_index_' . md5(json_encode([])));
-        Cache::forget('feeds_index_' . md5(json_encode(['category' => null, 'free' => null])));
+        // Nettoyer le cache des feeds et du feed spécifique
+        CacheService::clearFeedsCache();
+        CacheService::forget('feed_' . $feed->id);
 
         return redirect()->route('feeds.show', $feed)->with('success', 'Activity updated successfully');
     }
@@ -241,11 +268,13 @@ class FeedController extends Controller
     {
         $this->authorize('delete', $feed);
 
+        $feedId = $feed->id;
         $feed->feedable->delete(); // Delete the polymorphic model
         $feed->delete(); // Delete the feed
 
-        // Nettoyer le cache
-        Cache::forget('feeds_index_' . md5(json_encode([])));
+        // Nettoyer le cache des feeds et du feed spécifique
+        CacheService::clearFeedsCache();
+        CacheService::forget('feed_' . $feedId);
 
         return redirect()->route('feeds.index')->with('success', 'Activity deleted successfully');
     }

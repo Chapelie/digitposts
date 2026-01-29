@@ -11,15 +11,17 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Category;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Subscription;
+use App\Services\CacheService;
 
 class CreatorController extends Controller{
     public function index()
     {
         $user = Auth::user();
-        $cacheKey = 'creator_dashboard_' . $user->id;
+        $cacheKey = CacheService::userKey($user->id, 'creator_dashboard');
 
-        // Cache pour 5 minutes
-        $data = Cache::remember($cacheKey, 300, function () use ($user) {
+        // Cache pour 10 minutes
+        $data = CacheService::remember($cacheKey, function () use ($user) {
             // Récupérer les feeds de l'utilisateur avec les relations (optimisé)
             $feeds = Feed::with(['feedable', 'user', 'registrations'])
                 ->where('user_id', $user->id)
@@ -91,7 +93,7 @@ class CreatorController extends Controller{
                 'trainingsCount' => $trainingsCount,
                 'eventsCount' => $eventsCount
             ];
-        });
+        }, CacheService::TTL_MEDIUM);
 
         return view('dashboard.index', array_merge($data, ['user' => $user]));
     }
@@ -99,34 +101,33 @@ class CreatorController extends Controller{
     public function campaignIndex()
     {
         $user = Auth::user();
+        $cacheKey = CacheService::userKey($user->id, 'campaigns_list');
 
-        // Nettoyer le cache pour cet utilisateur pour avoir les données à jour
-        Cache::forget('creator_dashboard_' . $user->id);
+        $limit = config('scaling.limits.campaigns_per_creator', 500);
+        $campaigns = CacheService::remember($cacheKey, function () use ($user, $limit) {
+            return Feed::with(['feedable.categories', 'user'])
+                ->withCount('registrations')
+                ->where('user_id', $user->id)
+                ->whereHasMorph('feedable', [Event::class, Training::class])
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get()
+                ->filter(fn($feed) => $feed->feedable !== null);
+        }, CacheService::TTL_MEDIUM);
 
-        $campaigns = Feed::with(['feedable.categories', 'user', 'registrations'])
-            ->where('user_id', $user->id)
-            ->whereHasMorph('feedable', [Event::class, Training::class])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // Filtrer les feeds qui ont un feedable valide (sécurité supplémentaire)
-        $campaigns = $campaigns->filter(function($feed) {
-            return $feed->feedable !== null;
-        });
-
-        // Récupérer toutes les catégories depuis la base de données (cached)
-        $categories = Cache::remember('categories_list', 3600, function () {
+        // Récupérer toutes les catégories depuis la base de données (cached 24h)
+        $categories = CacheService::remember('categories_list', function () {
             return Category::distinct()->get(['id', 'name', 'type']);
-        });
+        }, CacheService::TTL_DAY);
 
         return view('campagnes.index', compact('campaigns', 'categories'));
     }
 
     public function campaignCreate(){
-         // Récupérer toutes les catégories existantes (cached)
-        $categories = Cache::remember('categories_list', 3600, function () {
+         // Récupérer toutes les catégories existantes (cached 24h)
+        $categories = CacheService::remember('categories_all', function () {
             return Category::orderBy('name')->get();
-        });
+        }, CacheService::TTL_DAY);
         
         return view('campagnes.create', compact('categories'));
      }
@@ -147,12 +148,20 @@ class CreatorController extends Controller{
                  'location' => 'nullable|string|max:255',
                  'place' => 'nullable|string|max:255',
                  'link' => 'nullable|url|max:500',
+                 'status' => 'nullable|in:brouillon,publiée',
              ], [
                  'start_date.after_or_equal' => 'La date de début doit être aujourd\'hui ou dans le futur.',
                  'end_date.after' => 'La date de fin doit être après la date de début.',
                  'file.max' => 'Le fichier ne doit pas dépasser 5MB.',
                  'categories.max' => 'Vous ne pouvez sélectionner que 10 catégories maximum.',
              ]);
+
+         // Publier nécessite l'abonnement "création d'activités"
+         $status = $request->input('status', 'brouillon');
+         if ($status === 'publiée' && !Subscription::hasActiveSubscription($user->id, \App\Models\SubscriptionPlan::TYPE_CREATE_ACTIVITIES)) {
+             return redirect()->route('subscriptions.checkout', ['plan' => 'create_activities'])
+                 ->with('error', 'Vous devez vous abonner au plan "Création d\'activités" pour publier.');
+         }
          // On stocke le fichier dans un répertoire 'uploads' et on récupère le chemin
          $filePath = null;
          if ($request->hasFile('file')) {
@@ -221,24 +230,20 @@ class CreatorController extends Controller{
          // Create the feed
              $feed = new Feed([
                  'isPrivate' => $request->isPrivate ?? false,
-                 'status' => 'publiée',
+                 'status' => $status,
                  'user_id' => $user->id
              ]);
              $feedable->feed()->save($feed);
 
-             // Nettoyer le cache des feeds (tous les variants possibles)
-             Cache::forget('feeds_index_' . md5(json_encode([])));
-             Cache::forget('categories_list');
-             Cache::forget('creator_dashboard_' . $user->id);
-             
-             // Nettoyer tous les caches de feeds_index possibles
-             $patterns = ['feeds_index_*'];
-             foreach ($patterns as $pattern) {
-                 Cache::flush(); // Plus simple : vider tout le cache
-                 break;
-             }
+            // Nettoyer le cache des feeds et de l'utilisateur
+            CacheService::clearFeedsCache();
+            CacheService::clearUserCache($user->id);
+            CacheService::forget('categories_all');
 
-             return redirect()->route('dashboard.campaigns')->with('success', 'Campagne créée avec succès !');
+             if ($status === 'publiée') {
+                 return redirect()->route('home')->with('offer_published', true);
+             }
+             return redirect()->route('dashboard.campaigns')->with('success', 'Brouillon enregistré avec succès !');
          }
 
     public function campaignRegistrations($uuid)
@@ -324,5 +329,51 @@ class CreatorController extends Controller{
         }
 
         return redirect()->route('settings')->with('success', 'Paramètres mis à jour avec succès !');
+    }
+
+    /**
+     * Exporter la liste des inscrits d'une campagne en PDF
+     */
+    public function exportCampaignRegistrationsPdf($uuid)
+    {
+        $user = Auth::user();
+        
+        // Récupérer la campagne avec ses inscriptions
+        $feed = Feed::where('id', $uuid)
+            ->where('user_id', $user->id)
+            ->with(['feedable', 'registrations.user'])
+            ->firstOrFail();
+
+        $activity = $feed->feedable;
+        $registrations = $feed->registrations()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Statistiques
+        $stats = [
+            'total' => $registrations->count(),
+            'confirmed' => $registrations->where('status', Registration::STATUS_CONFIRMED)->count(),
+            'pending' => $registrations->where('status', Registration::STATUS_PENDING)->count(),
+            'cancelled' => $registrations->where('status', Registration::STATUS_CANCELLED)->count(),
+            'paid' => $registrations->where('payment_status', 'paid')->count(),
+            'totalRevenue' => $registrations->where('payment_status', 'paid')->sum('amount_paid'),
+        ];
+
+        $data = [
+            'feed' => $feed,
+            'activity' => $activity,
+            'registrations' => $registrations,
+            'stats' => $stats,
+            'creator' => $user,
+            'generatedAt' => now(),
+        ];
+
+        $pdf = \PDF::loadView('campagnes.exports.registrations-pdf', $data);
+        
+        // Nom du fichier
+        $filename = 'inscrits_' . \Str::slug($activity->title) . '_' . now()->format('Y-m-d') . '.pdf';
+        
+        return $pdf->download($filename);
     }
 }

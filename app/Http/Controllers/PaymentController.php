@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendReceiptEmailJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Registration;
@@ -233,7 +234,7 @@ class PaymentController extends Controller
                             'status' => 'confirmed'
                         ]);
 
-                        $this->receiptService->sendReceiptEmail($registration->fresh());
+                        SendReceiptEmailJob::dispatch($registration->fresh());
 
                         Log::info('Paiement traité avec succès', [
                             'registration_id' => $registration->id,
@@ -373,7 +374,7 @@ class PaymentController extends Controller
                                 'payment_details' => $paymentData,
                                 'status' => 'confirmed'
                             ]);
-                            $this->receiptService->sendReceiptEmail($registration->fresh());
+                            SendReceiptEmailJob::dispatch($registration->fresh());
                             return redirect()->route('user.registrations')
                                 ->with('success', 'Paiement effectué avec succès ! Votre inscription est confirmée.');
                         } elseif ($registration->payment_status === 'paid') {

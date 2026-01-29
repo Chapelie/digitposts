@@ -20,6 +20,10 @@
         <form action="{{ route('campaigns.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
+            @php
+                $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_CREATE_ACTIVITIES);
+            @endphp
+
             <div class="tabs">
                 <!-- Onglets -->
                 <div class="flex border-b mb-6">
@@ -172,7 +176,7 @@
                     </div>
 
                     <div class="flex justify-end gap-4">
-                        <button type="button" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        <button type="submit" name="status" value="brouillon" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                             Enregistrer comme brouillon
                         </button>
                         <button type="button" onclick="showTab('categories')" class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
@@ -302,7 +306,14 @@
                             <button type="button" onclick="showTab('categories')" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                 Retour aux catégories
                             </button>
-                            <button type="submit" class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            @if(!$hasActiveSubscription)
+                                <a href="{{ route('subscriptions.checkout', ['plan' => 'create_activities']) }}" class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                    S’abonner pour publier (plan Création d'activités)
+                                </a>
+                            @endif
+                            <button type="submit" name="status" value="publiée"
+                                    class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    {{ !$hasActiveSubscription ? 'disabled' : '' }}>
                                 Publier
                             </button>
                         </div>

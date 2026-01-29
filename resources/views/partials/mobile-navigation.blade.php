@@ -32,17 +32,15 @@
             <span class="text-xs mt-1 text-muted-foreground">Créer</span>
         </a>
 
-        <!-- Connexion/Dashboard -->
+        <!-- Profil/Dashboard -->
         @auth
-            <a href="{{ route('user.dashboard') }}" class="nav-item flex flex-col items-center justify-center w-full h-full" data-page="dashboard">
-                <svg class="h-5 w-5 icon-dashboard" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor"
+            <a href="{{ route('user.profile') }}" class="nav-item flex flex-col items-center justify-center w-full h-full" data-page="profile">
+                <svg class="h-5 w-5 icon-profile" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                 </svg>
-                <span class="text-xs mt-1 label-dashboard">Dashboard</span>
+                <span class="text-xs mt-1 label-profile">Profil</span>
             </a>
         @else
             <a href="/login" class="nav-item flex flex-col items-center justify-center w-full h-full" data-page="login">
@@ -94,6 +92,7 @@
         if (currentPath === '/') activePage = 'home';
         else if (currentPath.includes('/create')) activePage = 'create';
         else if (currentPath.includes('/login')) activePage = 'login';
+        else if (currentPath.includes('/profile') || currentPath.includes('/dashboard/settings')) activePage = 'profile';
         else if (currentPath.includes('/dashboard')) activePage = 'dashboard';
 
         const navItems = document.querySelectorAll('.nav-item');

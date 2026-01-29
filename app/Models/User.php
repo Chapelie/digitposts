@@ -31,6 +31,8 @@ class User extends Authenticatable
         'location',
         'google_id',
         'google_avatar',
+        'is_admin',
+        'role',
     ];
 
     /**
@@ -53,7 +55,24 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * Vérifie si l'utilisateur est administrateur (rôle admin)
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Vérifier si l'utilisateur a un abonnement actif pour un type de plan
+     */
+    public function hasActiveSubscriptionFor(string $planType): bool
+    {
+        return Subscription::hasActiveSubscription($this->id, $planType);
     }
 
     /**
@@ -78,5 +97,28 @@ class User extends Authenticatable
     public function favorites()
     {
         return $this->hasMany(Favorite::class);
+    }
+
+    /**
+     * Relation avec les abonnements
+     */
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * Obtenir l'abonnement actif de l'utilisateur (optionnellement pour un type)
+     */
+    public function activeSubscription(?string $planType = null)
+    {
+        $q = $this->hasOne(Subscription::class)
+            ->where('status', 'active')
+            ->where('payment_status', 'paid')
+            ->where('end_date', '>', now());
+        if ($planType !== null) {
+            $q->where('plan_type', $planType);
+        }
+        return $q->latest('end_date');
     }
 }

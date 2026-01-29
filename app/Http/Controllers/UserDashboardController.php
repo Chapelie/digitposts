@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Feed;
 use App\Models\Registration;
 use App\Models\Favorite;
+use App\Services\CacheService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,25 +18,40 @@ class UserDashboardController extends Controller
     public function dashboard()
     {
         $user = Auth::user();
+        $cacheKey = CacheService::userKey($user->id, 'dashboard');
         
-        // Statistiques de l'utilisateur
-        $stats = $this->getUserStats($user->id);
-        
-        // Inscriptions récentes
-        $recentRegistrations = Registration::where('user_id', $user->id)
-            ->with(['feed.feedable'])
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
-        
-        // Favoris récents
-        $recentFavorites = Favorite::where('user_id', $user->id)
-            ->with(['feed.feedable'])
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+        // Cache pour 5 minutes
+        $data = CacheService::remember($cacheKey, function () use ($user) {
+            // Statistiques de l'utilisateur
+            $stats = $this->getUserStats($user->id);
+            
+            // Inscriptions récentes avec eager loading
+            $recentRegistrations = Registration::where('user_id', $user->id)
+                ->with(['feed.feedable', 'feed.user'])
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+            
+            // Favoris récents avec eager loading
+            $recentFavorites = Favorite::where('user_id', $user->id)
+                ->with(['feed.feedable', 'feed.user'])
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
 
-        return view('dashboard.user-dashboard', compact('stats', 'recentRegistrations', 'recentFavorites'));
+            return compact('stats', 'recentRegistrations', 'recentFavorites');
+        }, CacheService::TTL_SHORT);
+
+        return view('dashboard.user-dashboard', $data);
+    }
+
+    /**
+     * Page de profil de l'utilisateur
+     */
+    public function profile()
+    {
+        // Rediriger vers la page settings qui contient déjà les informations du profil
+        return redirect()->route('dashboard.settings');
     }
 
     /**
@@ -45,8 +61,9 @@ class UserDashboardController extends Controller
     {
         $user = Auth::user();
         
+        // Eager loading complet pour éviter N+1
         $registrations = Registration::where('user_id', $user->id)
-            ->with(['feed.feedable'])
+            ->with(['feed.feedable.categories', 'feed.user'])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -60,8 +77,9 @@ class UserDashboardController extends Controller
     {
         $user = Auth::user();
         
+        // Eager loading complet pour éviter N+1
         $favorites = Favorite::where('user_id', $user->id)
-            ->with(['feed.feedable'])
+            ->with(['feed.feedable.categories', 'feed.user'])
             ->orderBy('created_at', 'desc')
             ->paginate(12);
 
@@ -96,6 +114,9 @@ class UserDashboardController extends Controller
             $message = 'Ajouté aux favoris';
             $isFavorite = true;
         }
+
+        // Invalider le cache utilisateur
+        CacheService::clearUserCache($user->id);
 
         if ($request->ajax()) {
             return response()->json([
@@ -194,8 +215,9 @@ class UserDashboardController extends Controller
     {
         $user = Auth::user();
         
+        // Eager loading complet pour éviter N+1
         $registrations = Registration::where('user_id', $user->id)
-            ->with(['feed.feedable'])
+            ->with(['feed.feedable.categories', 'feed.user'])
             ->orderBy('created_at', 'desc')
             ->get();
 
