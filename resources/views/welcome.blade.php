@@ -84,7 +84,7 @@
 
                 <!-- Subtitle -->
                 <p class="text-base md:text-lg text-gray-100 max-w-3xl mx-auto mb-6 leading-relaxed drop-shadow-md">
-                    Développez vos compétences avec nos formations professionnelles et participez à des événements exclusifs au Burkina Faso.
+                    {{ config('digitposts.description_short', 'Plateforme de formations et d\'événements au Burkina Faso.') }} Professionnels, étudiants et organisations : valorisez ou accédez à des opportunités de développement.
                 </p>
 
                 <!-- CTA Buttons -->
@@ -96,27 +96,30 @@
                         </svg>
                         Voir les Activités
                     </a>
-                    
                     @auth
-                        <a href="{{ route('campaigns.create') }}" class="inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 hover:border-blue-500 text-gray-700 hover:text-blue-600 font-semibold rounded-lg text-base transition-all duration-300 transform hover:scale-105">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <a href="{{ route('campaigns.create') }}" class="inline-flex items-center justify-center px-7 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-base transition-all duration-300 transform hover:scale-105 shadow-lg ring-2 ring-white/30 ring-offset-2 ring-offset-transparent">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
                             Créer une Activité
                         </a>
                     @else
-                        <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 hover:border-blue-500 text-gray-700 hover:text-blue-600 font-semibold rounded-lg text-base transition-all duration-300 transform hover:scale-105">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
+                        <a href="{{ route('campaigns.create') }}" class="inline-flex items-center justify-center px-7 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-base transition-all duration-300 transform hover:scale-105 shadow-lg ring-2 ring-white/30 ring-offset-2 ring-offset-transparent">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
-                            Commencer
+                            Créer une Activité
+                        </a>
+                        <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-6 py-3 border-2 border-white/80 text-white font-semibold rounded-lg text-base hover:bg-white/10 transition-all duration-300">
+                            S'inscrire
                         </a>
                     @endauth
                 </div>
 
-                <!-- Stats -->
+                <!-- Nombre de formations et événements disponibles -->
+                <p class="text-sm text-white/90 mb-3">Formations et événements disponibles</p>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
                     <div class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
                         <div class="text-xl md:text-2xl font-bold text-blue-600 mb-0.5">{{ $trainingFeeds->count() }}</div>
@@ -135,18 +138,18 @@
                             $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
                         @endphp
                         @if($hasActiveSubscription)
-                            <a href="{{ route('home', ['free' => 'true']) }}#activities" class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                            <a href="{{ route('home', ['free' => 'true']) }}#activities" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-orange-300 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
                                 <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
                                 <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
                             </a>
                         @else
-                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-orange-300 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
                                 <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
                                 <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
                             </a>
                         @endif
                     @else
-                        <a href="{{ route('login') }}" class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                        <a href="{{ route('login') }}" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-orange-300 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
                             <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
                             <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
                         </a>
@@ -161,20 +164,46 @@
         <div class="container mx-auto px-4">
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
                 <div class="text-center mb-4">
-                    <h2 class="text-xl font-bold text-gray-900 mb-2">Filtrer par Catégorie</h2>
-                    <p class="text-sm text-gray-600">Trouvez les activités qui correspondent à vos intérêts</p>
+                    <h2 class="text-xl font-bold text-gray-900 mb-2">Filtrer les activités</h2>
+                    <p class="text-sm text-gray-600">Type de formation, zone géographique, date</p>
                 </div>
 
-                <!-- Desktop Filter -->
+                <!-- Filtres Type, Zone, Date -->
+                <div class="flex flex-wrap items-center justify-center gap-3 mb-4 pb-4 border-b border-gray-100">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</span>
+                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'zone', 'date_order']), ['type' => null])) }}#activities" 
+                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ !request('type') ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Tous</a>
+                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'zone', 'date_order']), ['type' => 'formation'])) }}#activities" 
+                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ request('type') === 'formation' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Formations</a>
+                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'zone', 'date_order']), ['type' => 'event'])) }}#activities" 
+                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ request('type') === 'event' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Événements</a>
+
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide ml-2">Zone</span>
+                    @php $zones = $zones ?? []; @endphp
+                    <select onchange="window.location.href = this.value" class="rounded-lg border border-gray-300 text-sm py-1.5 px-3 bg-white">
+                        <option value="{{ route('home', array_merge(request()->only(['category', 'free', 'type', 'date_order']), ['zone' => 'all'])) }}#activities">Toutes les villes</option>
+                        @foreach($zones as $zone)
+                            <option value="{{ route('home', array_merge(request()->only(['category', 'free', 'type', 'date_order']), ['zone' => $zone['id']])) }}#activities" {{ request('zone') === $zone['id'] ? 'selected' : '' }}>{{ $zone['name'] }} – {{ $zone['region'] }}</option>
+                        @endforeach
+                    </select>
+
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide ml-2">Date</span>
+                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'type', 'zone']), ['date_order' => 'proche'])) }}#activities" 
+                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ request('date_order') === 'proche' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Proches</a>
+                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'type', 'zone']), ['date_order' => 'lointain'])) }}#activities" 
+                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ request('date_order') === 'lointain' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Lointaines</a>
+                </div>
+
+                <!-- Desktop Filter Catégories + Gratuit -->
                 <div class="hidden md:block">
                     <div class="flex flex-wrap justify-center gap-2">
-                    <a href="{{ route('home') }}#activities" 
+                    <a href="{{ route('home', request()->only(['type', 'zone', 'date_order'])) }}#activities" 
                        class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ !$selectedCategory && !$showFreeOnly ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
                         Toutes les activités
                     </a>
                     @foreach($categories as $category)
-                        <a href="{{ route('home', ['category' => $category->id]) }}#activities" 
+                        <a href="{{ route('home', array_merge(request()->only(['type', 'zone', 'date_order']), ['category' => $category->id])) }}#activities" 
                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ $selectedCategory == $category->id ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/></svg>
                             {{ $category->name }}
@@ -185,7 +214,7 @@
                             $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
                         @endphp
                         @if($hasActiveSubscription)
-                            <a href="{{ route('home', ['free' => 'true']) }}#activities" 
+                            <a href="{{ route('home', array_merge(request()->only(['type', 'zone', 'date_order']), ['free' => 'true'])) }}#activities" 
                                class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ $showFreeOnly ? 'bg-green-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-green-50 hover:shadow-md' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
                                 Gratuites uniquement
@@ -461,6 +490,23 @@
         </div>
     </section>
 
+    <!-- Tarifs de diffusion -->
+    @if(!empty($tarifsDiffusion))
+    <section class="py-10 bg-white border-t border-gray-200">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Tarifs de diffusion</h2>
+            <div class="flex flex-wrap justify-center gap-4">
+                @foreach($tarifsDiffusion as $tarif)
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 px-6 py-4 shadow-sm">
+                        <span class="text-2xl font-bold text-blue-600">{{ number_format($tarif['amount'], 0, ',', ' ') }} FCFA</span>
+                        <span class="block text-sm text-gray-600">{{ $tarif['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+    @endif
+
     <!-- CTA Section -->
     <section class="py-16 bg-gradient-to-r from-blue-700 to-blue-900 text-white">
         <div class="container mx-auto px-4 text-center">
@@ -482,6 +528,7 @@
                     </a>
                 @endauth
             </div>
+            @include('partials.social-share', ['url' => url()->current(), 'title' => 'DigitPosts - Formations & Événements'])
         </div>
     </section>
 
@@ -546,6 +593,14 @@
         .delay-200 { animation-delay: 0.2s; }
         .delay-300 { animation-delay: 0.3s; }
         .delay-400 { animation-delay: 0.4s; }
+
+        .animate-pulse-subtle {
+            animation: pulseSubtle 2.5s ease-in-out infinite;
+        }
+        @keyframes pulseSubtle {
+            0%, 100% { opacity: 1; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+            50% { opacity: 0.95; box-shadow: 0 10px 20px -5px rgba(249, 115, 22, 0.2); }
+        }
         
         @keyframes fadeInDown {
             from {

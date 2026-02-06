@@ -92,10 +92,17 @@
                     <p class="text-sm text-green-700">Votre abonnement a été activé avec succès.</p>
                 </div>
             </div>
-            <div class="mt-4">
+            <div class="mt-4 flex flex-col sm:flex-row gap-3">
                 <a href="{{ route('subscriptions.index') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
                     Voir mes abonnements
                 </a>
+                <div class="flex-1">
+                    @include('partials.social-share', [
+                        'url' => route('subscriptions.checkout', ['plan' => $plan->type]),
+                        'title' => $plan->name . ' - ' . number_format($plan->amount, 0, ',', ' ') . ' XOF pour ' . $plan->duration_weeks . ' semaines',
+                        'variant' => 'light'
+                    ])
+                </div>
             </div>
         </div>
         @else
@@ -175,6 +182,16 @@
             </div>
         </div>
         @endif
+
+        <!-- Partage social -->
+        <div class="mt-8 bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <p class="text-sm font-medium text-gray-700 mb-3 text-center">Partager ce plan d'abonnement</p>
+            @include('partials.social-share', [
+                'url' => route('subscriptions.checkout', ['plan' => $plan->type]),
+                'title' => $plan->name . ' - ' . number_format($plan->amount, 0, ',', ' ') . ' XOF pour ' . $plan->duration_weeks . ' semaines sur DigitPosts',
+                'variant' => 'light'
+            ])
+        </div>
 
         <!-- Informations de sécurité -->
         <div class="mt-8 bg-blue-50 rounded-lg p-4">
@@ -299,5 +316,52 @@ function initiatePayment() {
         `;
     });
 }
+
+// Vérification automatique du statut de paiement toutes les 5 secondes si le paiement est en attente
+@if($subscription->payment_status === 'pending' && $subscription->payment_transaction_id)
+let checkStatusInterval;
+let checkStatusCount = 0;
+const maxChecks = 30; // Maximum 30 vérifications (2.5 minutes)
+
+function checkPaymentStatus() {
+    if (checkStatusCount >= maxChecks) {
+        clearInterval(checkStatusInterval);
+        return;
+    }
+    
+    checkStatusCount++;
+    
+    fetch('{{ route("subscriptions.checkout", ["plan" => $plan->type]) }}?check_status=1&subscription_id={{ $subscription->id }}', {
+        method: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.payment_status === 'paid') {
+            clearInterval(checkStatusInterval);
+            // Recharger la page pour afficher le statut "paid"
+            window.location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la vérification:', error);
+    });
+}
+
+// Démarrer la vérification automatique après 3 secondes
+setTimeout(() => {
+    checkStatusInterval = setInterval(checkPaymentStatus, 5000);
+}, 3000);
+
+// Arrêter la vérification si l'utilisateur quitte la page
+window.addEventListener('beforeunload', () => {
+    if (checkStatusInterval) {
+        clearInterval(checkStatusInterval);
+    }
+});
+@endif
 </script>
 @endsection

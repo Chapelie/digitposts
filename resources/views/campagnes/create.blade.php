@@ -124,14 +124,36 @@
                                 </div>
                             </div>
 
-                            <!-- Lieu -->
+                            <!-- Zone / Lieu -->
                             <div class="space-y-2">
-                                <label for="location" class="block text-sm font-medium text-gray-700">Lieu</label>
-                                <input type="text" id="location" name="location" placeholder="Entrez le lieu"
+                                <label for="zone" class="block text-sm font-medium text-gray-700">Zone (ville)</label>
+                                <select id="zone" name="zone" class="block w-full px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base bg-white">
+                                    <option value="">— Choisir une ville —</option>
+                                    @foreach($zones ?? [] as $zone)
+                                        <option value="{{ $zone['name'] }}" {{ old('zone') === $zone['name'] ? 'selected' : '' }}>{{ $zone['name'] }} – {{ $zone['region'] }}</option>
+                                    @endforeach
+                                    <option value="other" {{ old('zone') === 'other' ? 'selected' : '' }}>Autre (précisez ci-dessous)</option>
+                                </select>
+                            </div>
+                            <div id="location-other-wrap" class="space-y-2 {{ old('zone') === 'other' ? '' : 'hidden' }}">
+                                <label for="location" class="block text-sm font-medium text-gray-700">Lieu (si autre)</label>
+                                <input type="text" id="location" name="location" placeholder="Ville ou adresse"
                                        class="block w-full px-4 py-2 rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base"
                                        value="{{ old('location') }}">
                             </div>
                         </div>
+
+                        @if(!empty($tarifsDiffusion))
+                        <div class="rounded-lg border border-blue-100 bg-blue-50/50 p-4">
+                            <p class="text-sm font-medium text-blue-900 mb-2">Tarifs de diffusion</p>
+                            <ul class="text-sm text-blue-800 space-y-1">
+                                @foreach($tarifsDiffusion as $t)
+                                    <li>{{ $t['label'] }} : {{ number_format($t['amount'], 0, ',', ' ') }} FCFA</li>
+                                @endforeach
+                            </ul>
+                            <p class="text-xs text-blue-700 mt-2">Les formations et événements gratuits peuvent être publiés sans frais.</p>
+                        </div>
+                        @endif
 
                         <!-- Montant et paiement -->
                         <div class="grid gap-6 md:grid-cols-2">
@@ -302,18 +324,20 @@
                             </div>
                         </div>
 
+                        <p class="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                            <strong>Activité gratuite :</strong> si le montant est à 0 et que « Paiement possible » est décoché (formation), vous pouvez <strong>publier sans abonnement</strong>. L’abonnement « Création d’activités » n’est requis que pour les activités payantes.
+                        </p>
                         <div class="flex justify-end gap-4">
                             <button type="button" onclick="showTab('categories')" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                 Retour aux catégories
                             </button>
                             @if(!$hasActiveSubscription)
                                 <a href="{{ route('subscriptions.checkout', ['plan' => 'create_activities']) }}" class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                    S’abonner pour publier (plan Création d'activités)
+                                    S’abonner pour publier des activités payantes
                                 </a>
                             @endif
                             <button type="submit" name="status" value="publiée"
-                                    class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                                    {{ !$hasActiveSubscription ? 'disabled' : '' }}>
+                                    class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                 Publier
                             </button>
                         </div>
@@ -370,7 +394,9 @@
                 document.getElementById('preview-dates').textContent = `${startDate} - ${endDate}`;
 
                 // Afficher le lieu pour les formations
-                const location = document.getElementById('location').value || 'Non spécifié';
+                const zoneSelect = document.getElementById('zone');
+                const locationInput = document.getElementById('location');
+                const location = (zoneSelect && zoneSelect.value === 'other' && locationInput) ? locationInput.value : (zoneSelect ? zoneSelect.selectedOptions[0]?.text : '') || (locationInput ? locationInput.value : '') || 'Non spécifié';
                 document.getElementById('preview-location').textContent = location;
                 document.getElementById('preview-location-container').classList.remove('hidden');
             } else {
@@ -456,6 +482,16 @@
                 updatePreview();
             });
         });
+
+        // Zone / lieu autre
+        const zoneSelect = document.getElementById('zone');
+        const locationOtherWrap = document.getElementById('location-other-wrap');
+        if (zoneSelect && locationOtherWrap) {
+            zoneSelect.addEventListener('change', function() {
+                locationOtherWrap.classList.toggle('hidden', this.value !== 'other');
+                updatePreview();
+            });
+        }
 
         // Gestion du fichier
         document.getElementById('file').addEventListener('change', function(e) {

@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
+    <!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-W2W25DT5');</script>
+<!-- End Google Tag Manager -->
     <meta charset="utf-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
@@ -193,11 +200,8 @@
                     <span class="text-xl font-bold text-blue-600">DigitPosts</span>
                 </a>
                 <p class="text-sm text-gray-600">
-                Plateforme dédiée à la diffusion d'information sur les formations et évènements au Burkina Faso.
-                Que vous soyez un Professionnels en quète d'opportunité, un étudiant à la recherche de formations,
-                ou une organisation souhaitant partager ses évènements, Diginov vous connecte aux informations
-                essentielles pour votre développement.               
-             </p>
+                    {{ config('digitposts.description', 'DigitPosts est une plateforme numérique spécialisée dans la diffusion d\'informations relatives aux formations et événements au Burkina Faso. Elle s\'adresse aux professionnels, étudiants et organisations désireux de valoriser ou d\'accéder à des opportunités de développement.') }}
+                </p>
             </div>
             <div>
                 <h3 class="font-medium mb-3 text-blue-800">Plateforme</h3>

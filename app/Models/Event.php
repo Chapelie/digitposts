@@ -17,6 +17,7 @@ class Event extends Model
         'start_date',
         'file',
         'amount',
+        'location',
     ];
 
     protected $casts = [

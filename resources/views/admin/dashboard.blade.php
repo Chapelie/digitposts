@@ -26,7 +26,8 @@
 
         <!-- Stats Grid -->
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <!-- Total Users -->
+            @if(config('digitposts.show_users_count', false))
+            <!-- Total Users (masqué par défaut) -->
             <div class="rounded-xl border bg-white shadow-sm">
                 <div class="flex flex-row items-center justify-between p-6 pb-2">
                     <h3 class="text-sm font-medium">Total utilisateurs</h3>
@@ -42,6 +43,7 @@
                     <p class="text-xs text-gray-500">Utilisateurs inscrits</p>
                 </div>
             </div>
+            @endif
 
             <!-- Total Trainings -->
             <div class="rounded-xl border bg-white shadow-sm">

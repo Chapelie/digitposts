@@ -128,8 +128,11 @@ class CreatorController extends Controller{
         $categories = CacheService::remember('categories_all', function () {
             return Category::orderBy('name')->get();
         }, CacheService::TTL_DAY);
+
+        $zones = config('digitposts.zones', []);
+        $tarifsDiffusion = config('digitposts.tarifs_diffusion', []);
         
-        return view('campagnes.create', compact('categories'));
+        return view('campagnes.create', compact('categories', 'zones', 'tarifsDiffusion'));
      }
 
      public function campaignStore(Request $request){
@@ -156,11 +159,22 @@ class CreatorController extends Controller{
                  'categories.max' => 'Vous ne pouvez sélectionner que 10 catégories maximum.',
              ]);
 
-         // Publier nécessite l'abonnement "création d'activités"
+         // Publier : si prix = 0 ET paiement désactivé (gratuit), pas d'abonnement requis
          $status = $request->input('status', 'brouillon');
-         if ($status === 'publiée' && !Subscription::hasActiveSubscription($user->id, \App\Models\SubscriptionPlan::TYPE_CREATE_ACTIVITIES)) {
-             return redirect()->route('subscriptions.checkout', ['plan' => 'create_activities'])
-                 ->with('error', 'Vous devez vous abonner au plan "Création d\'activités" pour publier.');
+         if ($status === 'publiée') {
+             $amount = $request->filled('amount') ? (float) $request->amount : 0;
+             $isFree = false;
+             if ($request->type === 'event') {
+                 $isFree = $amount <= 0;
+             } else {
+                 // Formation : gratuit si "Paiement possible" non coché OU montant à 0
+                 $canPaid = $request->has('canPaid') && $request->input('canPaid');
+                 $isFree = !$canPaid || $amount <= 0;
+             }
+             if (!$isFree && !Subscription::hasActiveSubscription($user->id, \App\Models\SubscriptionPlan::TYPE_CREATE_ACTIVITIES)) {
+                 return redirect()->route('subscriptions.checkout', ['plan' => 'create_activities'])
+                     ->with('error', 'Pour publier une activité payante, abonnez-vous au plan "Création d\'activités". Les activités gratuites (prix 0, paiement désactivé) peuvent être publiées sans abonnement.');
+             }
          }
          // On stocke le fichier dans un répertoire 'uploads' et on récupère le chemin
          $filePath = null;
@@ -170,6 +184,7 @@ class CreatorController extends Controller{
 
          if ($request->type === 'event') {
              $data = $request->only(['title', 'description', 'start_date']);
+             $data['location'] = $request->filled('zone') && $request->zone !== 'other' ? $request->zone : $request->input('location');
              // Gérer le montant pour les événements
              $data['amount'] = $request->filled('amount') && $request->amount > 0 ? $request->amount : 0;
              $data['file'] = $filePath; // on ajoute manuellement le fichier
@@ -177,10 +192,11 @@ class CreatorController extends Controller{
          } else {
              $data = $request->only([
                  'title', 'description', 'start_date', 'end_date',
-                 'location', 'place', 'canPaid', 'link'
+                 'place', 'link'
              ]);
-             // Gérer le montant pour les formations
-             $data['amount'] = $request->filled('amount') && $request->amount > 0 ? $request->amount : 0;
+             $data['location'] = $request->filled('zone') && $request->zone !== 'other' ? $request->zone : $request->input('location');
+             $data['canPaid'] = $request->has('canPaid') && $request->input('canPaid');
+             $data['amount'] = $request->filled('amount') && (float) $request->amount > 0 ? (float) $request->amount : 0;
              $data['file'] = $filePath;
              $feedable = Training::create($data);
          }

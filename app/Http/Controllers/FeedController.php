@@ -35,8 +35,8 @@ class FeedController extends Controller
             }
         }
 
-        // Cache key basé sur les paramètres de requête - TTL augmenté à 10 minutes
-        $cacheKey = CacheService::feedsKey($request->only(['category', 'free']));
+        // Cache key basé sur les paramètres de requête - TTL 10 minutes
+        $cacheKey = CacheService::feedsKey($request->only(['category', 'free', 'type', 'zone', 'date_order']));
         
         // Récupérer depuis le cache ou exécuter la requête (10 minutes)
         $data = CacheService::remember($cacheKey, function () use ($request) {
@@ -45,12 +45,35 @@ class FeedController extends Controller
                 ->with(['feedable.categories', 'user']);
 
             // Filter by category in database if requested
-            $selectedCategory = null;
-            if ($request->has('category') && $request->category) {
-                $selectedCategory = $request->category;
-                $query->whereHas('feedable.categories', function($q) use ($selectedCategory) {
-                    $q->where('categories.id', $selectedCategory);
+            if ($request->filled('category')) {
+                $query->whereHas('feedable.categories', function($q) use ($request) {
+                    $q->where('categories.id', $request->category);
                 });
+            }
+
+            // Filter by type: formation | event
+            if ($request->filled('type')) {
+                if ($request->type === 'formation') {
+                    $query->where('feedable_type', Training::class);
+                } elseif ($request->type === 'event') {
+                    $query->where('feedable_type', Event::class);
+                }
+            }
+
+            // Filter by zone (ville)
+            if ($request->filled('zone') && $request->zone !== 'all') {
+                $zones = config('digitposts.zones', []);
+                $zoneItem = collect($zones)->firstWhere('id', $request->zone);
+                if ($zoneItem && !empty($zoneItem['name'])) {
+                    $zoneName = $zoneItem['name'];
+                    $query->where(function($q) use ($zoneName) {
+                        $q->whereHasMorph('feedable', [Event::class], function($q) use ($zoneName) {
+                            $q->where('location', 'like', '%' . $zoneName . '%');
+                        })->orWhereHasMorph('feedable', [Training::class], function($q) use ($zoneName) {
+                            $q->where('location', 'like', '%' . $zoneName . '%');
+                        });
+                    });
+                }
             }
 
             // Filter by free activities in database if requested
@@ -77,6 +100,16 @@ class FeedController extends Controller
 
             $limit = config('scaling.limits.feeds_homepage', 200);
             $publicFeeds = $query->latest()->limit($limit)->get();
+
+            // Tri par date (début d'activité) si demandé
+            if ($request->filled('date_order')) {
+                $asc = $request->date_order === 'proche';
+                $publicFeeds = $publicFeeds->sort(function ($a, $b) use ($asc) {
+                    $dateA = $a->feedable ? (\Carbon\Carbon::parse($a->feedable->start_date)->timestamp ?? 0) : 0;
+                    $dateB = $b->feedable ? (\Carbon\Carbon::parse($b->feedable->start_date)->timestamp ?? 0) : 0;
+                    return $asc ? $dateA <=> $dateB : $dateB <=> $dateA;
+                })->values();
+            }
 
             // Separate events and trainings feeds
             $eventFeeds = $publicFeeds->filter(function($feed) {
@@ -133,13 +166,15 @@ class FeedController extends Controller
             return Category::distinct()->get(['id', 'name', 'type']);
         }, CacheService::TTL_DAY);
 
+        $zones = config('digitposts.zones', []);
+        $tarifsDiffusion = config('digitposts.tarifs_diffusion', []);
+
         // SEO Data
         $swiperEvents = $data['swiperEvents'] ?? collect();
         $seoData = [
-            'seoTitle' => 'DigitPosts - Formations & Événements Professionnels au Burkina Faso',
-            'seoDescription' => 'Découvrez les meilleures formations et événements professionnels au Burkina Faso. ' . 
-                               'Inscrivez-vous facilement à des formations gratuites et payantes. ' . 
-                               'Développez vos compétences avec DigitPosts.',
+            'seoTitle' => 'DigitPosts - Formations & Événements au Burkina Faso',
+            'seoDescription' => config('digitposts.description_short', 'Plateforme de formations et d\'événements au Burkina Faso.') . ' ' .
+                               'Découvrez les formations et événements, inscrivez-vous facilement.',
             'seoKeywords' => 'formations, événements, Burkina Faso, développement professionnel, formations gratuites, événements professionnels, formations en ligne, formations certifiantes',
             'seoImage' => $swiperEvents->count() > 0 && $swiperEvents->first()->feedable && $swiperEvents->first()->feedable->file 
                 ? asset('storage/' . $swiperEvents->first()->feedable->file) 
@@ -157,6 +192,11 @@ class FeedController extends Controller
             'categories' => $categories,
             'selectedCategory' => $selectedCategory,
             'showFreeOnly' => $showFreeOnly,
+            'zones' => $zones,
+            'tarifsDiffusion' => $tarifsDiffusion,
+            'selectedType' => $request->get('type'),
+            'selectedZone' => $request->get('zone'),
+            'selectedDateOrder' => $request->get('date_order'),
         ]));
     }
 

@@ -36,14 +36,30 @@
                         <span class="text-gray-500">/ {{ $freePlan->duration_weeks }} semaines</span>
                     </div>
                     @if($activeFreeEvents)
-                        <div class="rounded-lg bg-green-50 border border-green-200 p-4">
+                        <div class="rounded-lg bg-green-50 border border-green-200 p-4 mb-3">
                             <p class="text-green-800 font-medium">Actif jusqu'au {{ $activeFreeEvents->end_date->format('d/m/Y') }}</p>
                             <p class="text-sm text-green-700">{{ $activeFreeEvents->end_date->diffInDays(now()) }} jours restants</p>
                         </div>
+                        <div class="mt-3">
+                            @include('partials.social-share', [
+                                'url' => route('subscriptions.checkout', ['plan' => 'free_events']),
+                                'title' => $freePlan->name . ' - ' . number_format($freePlan->amount, 0, ',', ' ') . ' XOF pour ' . $freePlan->duration_weeks . ' semaines',
+                                'variant' => 'light'
+                            ])
+                        </div>
                     @else
-                        <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">
-                            S'abonner
-                        </a>
+                        <div class="flex flex-col gap-3">
+                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="inline-flex items-center justify-center px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700">
+                                S'abonner
+                            </a>
+                            <div>
+                                @include('partials.social-share', [
+                                    'url' => route('subscriptions.checkout', ['plan' => 'free_events']),
+                                    'title' => $freePlan->name . ' - ' . number_format($freePlan->amount, 0, ',', ' ') . ' XOF pour ' . $freePlan->duration_weeks . ' semaines',
+                                    'variant' => 'light'
+                                ])
+                            </div>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -61,14 +77,30 @@
                         <span class="text-gray-500">/ {{ $createPlan->duration_weeks }} semaines</span>
                     </div>
                     @if($activeCreateActivities)
-                        <div class="rounded-lg bg-green-50 border border-green-200 p-4">
+                        <div class="rounded-lg bg-green-50 border border-green-200 p-4 mb-3">
                             <p class="text-green-800 font-medium">Actif jusqu'au {{ $activeCreateActivities->end_date->format('d/m/Y') }}</p>
                             <p class="text-sm text-green-700">{{ $activeCreateActivities->end_date->diffInDays(now()) }} jours restants</p>
                         </div>
+                        <div class="mt-3">
+                            @include('partials.social-share', [
+                                'url' => route('subscriptions.checkout', ['plan' => 'create_activities']),
+                                'title' => $createPlan->name . ' - ' . number_format($createPlan->amount, 0, ',', ' ') . ' XOF pour ' . $createPlan->duration_weeks . ' semaines',
+                                'variant' => 'light'
+                            ])
+                        </div>
                     @else
-                        <a href="{{ route('subscriptions.checkout', ['plan' => 'create_activities']) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            S'abonner
-                        </a>
+                        <div class="flex flex-col gap-3">
+                            <a href="{{ route('subscriptions.checkout', ['plan' => 'create_activities']) }}" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                S'abonner
+                            </a>
+                            <div>
+                                @include('partials.social-share', [
+                                    'url' => route('subscriptions.checkout', ['plan' => 'create_activities']),
+                                    'title' => $createPlan->name . ' - ' . number_format($createPlan->amount, 0, ',', ' ') . ' XOF pour ' . $createPlan->duration_weeks . ' semaines',
+                                    'variant' => 'light'
+                                ])
+                            </div>
+                        </div>
                     @endif
                 </div>
             </div>

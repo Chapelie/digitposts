@@ -3,7 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    
+    <!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-W2W25DT5');</script>
+<!-- End Google Tag Manager -->
     @include('components.seo-meta', [
         'title' => $seoTitle ?? 'Dashboard - DigitPosts',
         'description' => $seoDescription ?? 'Tableau de bord DigitPosts - Gérez vos formations, événements et inscriptions',
@@ -46,6 +52,10 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col md:flex-row bg-gray-50">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W2W25DT5"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 <!-- Mobile Header -->
 <div class="md:hidden flex items-center justify-between p-4 border-b bg-white shadow-sm sticky top-0 z-40">
     <div class="flex items-center gap-2">
