@@ -28,64 +28,103 @@
     </script>
     @endif
 
-    <!-- Hero Section with Swiper Background -->
-    <section class="relative bg-white text-gray-900 overflow-hidden min-h-[600px] md:min-h-[700px] flex items-center">
+    <!-- Hero Section with Swiper (image + écritures par slide) -->
+    <section class="relative bg-white text-gray-900 overflow-hidden min-h-[600px] md:min-h-[700px] flex flex-col">
         @if(isset($swiperEvents) && $swiperEvents->count() > 0)
-        <!-- Swiper Background Images -->
-        <div class="absolute inset-0 z-0">
-            <div class="swiper hero-swiper">
+        <!-- Swiper : slide 1 = intro (Plateforme, Découvrez les..., description), puis slides événements avec image + écritures -->
+        <div class="relative w-full flex-1 min-h-[340px] md:min-h-[420px]">
+            <div class="swiper hero-swiper h-full">
                 <div class="swiper-wrapper">
+                    {{-- Slide 1 : intro avec les écritures Plateforme / Découvrez les... / description --}}
+                    <div class="swiper-slide hero-slide-intro">
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50"></div>
+                        <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%);"></div>
+                        <div class="hero-slide-content absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-10">
+                            <div class="flex flex-wrap items-center justify-center gap-3 mb-4">
+                                <div class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-1.5 h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                                    Plateforme de Formations & Événements
+                                </div>
+                                <div class="crown-badge inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-400/90 text-amber-900 rounded-full text-xs font-bold shadow-lg animate-crown-glow">
+                                    <svg class="w-4 h-4 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                                    Gratuit
+                                </div>
+                            </div>
+                            <h1 class="text-2xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight text-gray-900">
+                                <span>Découvrez les</span><br><span class="text-blue-600">Meilleures Formations</span><br><span>& Événements</span>
+                            </h1>
+                            <p class="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
+                                {{ config('digitposts.description_short') }} Professionnels, étudiants et organisations : valorisez ou accédez à des opportunités de développement.
+                            </p>
+                        </div>
+                    </div>
                     @foreach($swiperEvents as $eventFeed)
                         @if($eventFeed->feedable && $eventFeed->feedable->file)
+                        @php $event = $eventFeed->feedable; @endphp
                         <div class="swiper-slide">
-                            <div class="absolute inset-0">
+                            <div class="absolute inset-0 z-0">
                                 <img 
-                                    src="{{ asset('storage/' . $eventFeed->feedable->file) }}" 
-                                    alt="{{ $eventFeed->feedable->title }} - Événement sur DigitPosts"
+                                    src="{{ asset('storage/' . $event->file) }}" 
+                                    alt="{{ $event->title }} - Événement sur DigitPosts"
                                     class="w-full h-full object-cover"
-                                    loading="eager"
+                                    loading="lazy"
                                 >
-                                <!-- Overlay sombre pour la lisibilité du texte -->
                                 <div class="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/65"></div>
+                            </div>
+                            <div class="hero-slide-content absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-10">
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-400/90 text-amber-900 rounded-full text-xs font-bold shadow-lg animate-crown-glow mb-3">
+                                    <svg class="w-4 h-4 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                                    Événement
+                                </div>
+                                <h2 class="text-2xl md:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg mb-2 max-w-4xl">{{ $event->title }}</h2>
+                                @if($event->start_date)
+                                <p class="text-base md:text-lg text-blue-200 drop-shadow-md">
+                                    {{ \Carbon\Carbon::parse($event->start_date)->translatedFormat('l d F Y \à H:i') }}
+                                </p>
+                                @endif
+                                @if(!empty($event->location))
+                                <p class="text-sm md:text-base text-gray-200 mt-1 drop-shadow">{{ $event->location }}</p>
+                                @endif
+                                <a href="{{ route('campaigns.show', $eventFeed->id) }}" class="mt-5 inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg">
+                                    Voir l'événement
+                                </a>
                             </div>
                         </div>
                         @endif
                     @endforeach
                 </div>
+                <div class="hero-swiper-pagination absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2"></div>
             </div>
         </div>
         @else
-        <!-- Fallback Background Pattern -->
+        <!-- Fallback sans swiper -->
         <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50"></div>
         <div class="absolute inset-0 opacity-30">
             <div class="absolute inset-0" style="background-image: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%);"></div>
         </div>
         @endif
 
-        <div class="relative z-10 container mx-auto px-4 py-8 md:py-12 w-full">
+        <div class="relative z-10 container mx-auto px-4 py-6 md:py-8 w-full {{ (isset($swiperEvents) && $swiperEvents->count() > 0) ? 'bg-white/95 backdrop-blur-sm border-t border-white/20' : '' }}">
             <div class="max-w-4xl mx-auto text-center">
-                <!-- Badge -->
-                <div class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-1.5 h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                    </svg>
-                    Plateforme de Formations & Événements
+                @if(!isset($swiperEvents) || $swiperEvents->count() === 0)
+                <!-- Badge + Couronne (affichés seulement sans swiper) -->
+                <div class="flex flex-wrap items-center justify-center gap-3 mb-4">
+                    <div class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-1.5 h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        Plateforme de Formations & Événements
+                    </div>
+                    <div class="crown-badge inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-400/90 text-amber-900 rounded-full text-xs font-bold shadow-lg animate-crown-glow">
+                        <svg class="w-4 h-4 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                        Gratuit
+                    </div>
                 </div>
-
-                <!-- Main Title -->
-                <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight text-white drop-shadow-lg">
-                    <span>Découvrez les</span>
-                    <br>
-                    <span class="text-blue-300">Meilleures Formations</span>
-                    <br>
-                    <span>& Événements</span>
+                <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight text-gray-900">
+                    <span>Découvrez les</span><br><span class="text-blue-600">Meilleures Formations</span><br><span>& Événements</span>
                 </h1>
-
-                <!-- Subtitle -->
-                <p class="text-base md:text-lg text-gray-100 max-w-3xl mx-auto mb-6 leading-relaxed drop-shadow-md">
-                    {{ config('digitposts.description_short', 'Plateforme de formations et d\'événements au Burkina Faso.') }} Professionnels, étudiants et organisations : valorisez ou accédez à des opportunités de développement.
+                <p class="text-base md:text-lg text-gray-600 max-w-3xl mx-auto mb-6">
+                    {{ config('digitposts.description_short') }} Professionnels, étudiants et organisations : valorisez ou accédez à des opportunités de développement.
                 </p>
+                @endif
 
                 <!-- CTA Buttons -->
                 <div class="flex flex-col sm:flex-row gap-3 justify-center mb-8">
@@ -112,14 +151,14 @@
                             </svg>
                             Créer une Activité
                         </a>
-                        <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-6 py-3 border-2 border-white/80 text-white font-semibold rounded-lg text-base hover:bg-white/10 transition-all duration-300">
+                        <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-6 py-3 border-2 font-semibold rounded-lg text-base transition-all duration-300 {{ (isset($swiperEvents) && $swiperEvents->count() > 0) ? 'border-gray-300 text-gray-700 hover:bg-gray-100' : 'border-white/80 text-white hover:bg-white/10' }}">
                             S'inscrire
                         </a>
                     @endauth
                 </div>
 
                 <!-- Nombre de formations et événements disponibles -->
-                <p class="text-sm text-white/90 mb-3">Formations et événements disponibles</p>
+                <p class="text-sm mb-3 {{ (isset($swiperEvents) && $swiperEvents->count() > 0) ? 'text-gray-700' : 'text-white/90' }}">Formations et événements disponibles</p>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
                     <div class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
                         <div class="text-xl md:text-2xl font-bold text-blue-600 mb-0.5">{{ $trainingFeeds->count() }}</div>
@@ -138,18 +177,27 @@
                             $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
                         @endphp
                         @if($hasActiveSubscription)
-                            <a href="{{ route('home', ['free' => 'true']) }}#activities" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-orange-300 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
+                            <a href="{{ route('home', ['free' => 'true']) }}#activities" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-amber-400 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
+                                <span class="inline-flex items-center justify-center w-8 h-8 mx-auto mb-1 rounded-full bg-amber-100 text-amber-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-5 h-5 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                                </span>
                                 <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
                                 <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
                             </a>
                         @else
-                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-orange-300 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
+                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-amber-400 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
+                                <span class="inline-flex items-center justify-center w-8 h-8 mx-auto mb-1 rounded-full bg-amber-100 text-amber-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-5 h-5 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                                </span>
                                 <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
                                 <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
                             </a>
                         @endif
                     @else
-                        <a href="{{ route('login') }}" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-orange-300 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
+                        <a href="{{ route('login') }}" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-amber-400 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
+                            <span class="inline-flex items-center justify-center w-8 h-8 mx-auto mb-1 rounded-full bg-amber-100 text-amber-600 group-hover:scale-110 transition-transform duration-300">
+                                <svg class="w-5 h-5 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                            </span>
                             <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
                             <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
                         </a>
@@ -490,23 +538,6 @@
         </div>
     </section>
 
-    <!-- Tarifs de diffusion -->
-    @if(!empty($tarifsDiffusion))
-    <section class="py-10 bg-white border-t border-gray-200">
-        <div class="container mx-auto px-4 text-center">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">Tarifs de diffusion</h2>
-            <div class="flex flex-wrap justify-center gap-4">
-                @foreach($tarifsDiffusion as $tarif)
-                    <div class="rounded-xl border border-gray-200 bg-gray-50 px-6 py-4 shadow-sm">
-                        <span class="text-2xl font-bold text-blue-600">{{ number_format($tarif['amount'], 0, ',', ' ') }} FCFA</span>
-                        <span class="block text-sm text-gray-600">{{ $tarif['label'] }}</span>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-    @endif
-
     <!-- CTA Section -->
     <section class="py-16 bg-gradient-to-r from-blue-700 to-blue-900 text-white">
         <div class="container mx-auto px-4 text-center">
@@ -599,7 +630,23 @@
         }
         @keyframes pulseSubtle {
             0%, 100% { opacity: 1; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-            50% { opacity: 0.95; box-shadow: 0 10px 20px -5px rgba(249, 115, 22, 0.2); }
+            50% { opacity: 0.95; box-shadow: 0 10px 20px -5px rgba(245, 158, 11, 0.35); }
+        }
+
+        .animate-crown-glow {
+            animation: crownGlow 2s ease-in-out infinite;
+        }
+        @keyframes crownGlow {
+            0%, 100% { box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); transform: scale(1); }
+            50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.7); transform: scale(1.02); }
+        }
+
+        .animate-crown-bounce {
+            animation: crownBounce 1.5s ease-in-out infinite;
+        }
+        @keyframes crownBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
         }
         
         @keyframes fadeInDown {
@@ -686,12 +733,23 @@
         .hero-swiper .swiper-slide {
             width: 100%;
             height: 100%;
+            position: relative;
+            overflow: hidden;
         }
 
         .hero-swiper .swiper-slide img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        /* Contenu des slides (écritures) toujours au-dessus et visible */
+        .hero-swiper .hero-slide-content {
+            pointer-events: auto;
+        }
+
+        .hero-swiper .hero-slide-intro .hero-slide-content {
+            max-width: 42rem;
         }
 
         /* Swiper Styles */
@@ -888,7 +946,7 @@
                 const heroSwiper = new Swiper('.hero-swiper', {
                     slidesPerView: 1,
                     spaceBetween: 0,
-                    loop: {{ $swiperEvents->count() > 1 ? 'true' : 'false' }},
+                    loop: {{ (1 + $swiperEvents->count()) > 1 ? 'true' : 'false' }},
                     autoplay: {
                         delay: 5000,
                         disableOnInteraction: false,
@@ -899,7 +957,11 @@
                         crossFade: true
                     },
                     speed: 1500,
-                    allowTouchMove: false, // Désactiver le swipe manuel pour le hero
+                    pagination: {
+                        el: '.hero-swiper-pagination',
+                        clickable: true,
+                    },
+                    allowTouchMove: false,
                 });
             }
         });
