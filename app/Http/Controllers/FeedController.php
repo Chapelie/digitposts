@@ -143,23 +143,27 @@ class FeedController extends Controller
                 }
             })->count();
 
-            // Récupérer les événements avec images pour le swiper (max 10)
-            $swiperEvents = $eventFeeds->filter(function($feed) {
-                return $feed->feedable && $feed->feedable->file;
-            })->take(10);
+            // Tous les feeds (événements + formations) avec image pour le swiper (sans limite, on mélange après)
+            $allFeedsWithImage = $publicFeeds->filter(function($feed) {
+                return $feed->feedable && !empty($feed->feedable->file);
+            });
 
             return [
                 'eventFeeds' => $eventFeeds,
                 'trainingFeeds' => $trainingFeeds,
                 'upcomingCount' => $upcomingCount,
                 'freeCount' => $freeCount,
-                'swiperEvents' => $swiperEvents
+                'swiperFeedsPool' => $allFeedsWithImage->values()
             ];
         });
 
         // Ces variables dépendent de la requête, pas du cache
         $selectedCategory = $request->get('category');
         $showFreeOnly = $request->has('free') && $request->free === 'true';
+
+        // Swiper : choisir des images au hasard dans le feed (événements + formations), max 10
+        $swiperFeedsPool = $data['swiperFeedsPool'] ?? collect();
+        $swiperFeeds = $swiperFeedsPool->shuffle()->take(10)->values();
 
         // Get all categories for filter (cached for 24 hours)
         $categories = CacheService::remember('categories_list', function () {
@@ -170,7 +174,7 @@ class FeedController extends Controller
         $tarifsDiffusion = config('digitposts.tarifs_diffusion', []);
 
         // SEO Data
-        $swiperEvents = $data['swiperEvents'] ?? collect();
+        $swiperEvents = $swiperFeeds; // garder pour seoImage (première image)
         $seoData = [
             'seoTitle' => 'DigitPosts - Formations & Événements au Burkina Faso',
             'seoDescription' => config('digitposts.description_short', 'Plateforme de formations et d\'événements au Burkina Faso.') . ' ' .
@@ -197,6 +201,7 @@ class FeedController extends Controller
             'selectedType' => $request->get('type'),
             'selectedZone' => $request->get('zone'),
             'selectedDateOrder' => $request->get('date_order'),
+            'swiperFeeds' => $swiperFeeds,
         ]));
     }
 
