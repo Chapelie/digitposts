@@ -162,9 +162,13 @@ class FeedController extends Controller
         $selectedCategory = $request->get('category');
         $showFreeOnly = $request->has('free') && $request->free === 'true';
 
-        // Swiper : choisir des images au hasard dans le feed (événements + formations), max 10
+        // Swiper : images des deux types (formations + événements), max 10
         $swiperFeedsPool = $data['swiperFeedsPool'] ?? collect();
-        $swiperFeeds = $swiperFeedsPool->shuffle()->take(10)->values();
+        $eventsWithImage = $swiperFeedsPool->filter(fn($f) => $f->feedable_type === Event::class)->shuffle();
+        $trainingsWithImage = $swiperFeedsPool->filter(fn($f) => $f->feedable_type === Training::class)->shuffle();
+        $fromEvents = $eventsWithImage->take(5);
+        $fromTrainings = $trainingsWithImage->take(5);
+        $swiperFeeds = $fromEvents->merge($fromTrainings)->shuffle()->take(10)->values();
 
         // Get all categories for filter (cached for 24 hours)
         $categories = CacheService::remember('categories_list', function () {

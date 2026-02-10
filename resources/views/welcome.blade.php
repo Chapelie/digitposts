@@ -206,45 +206,31 @@
             <div class="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
                 <div class="text-center mb-4">
                     <h2 class="text-xl font-bold text-gray-900 mb-2">Filtrer les activités</h2>
-                    <p class="text-sm text-gray-600">Type de formation, zone géographique, date</p>
+                    <p class="text-sm text-gray-600">Catégorie et zone géographique</p>
                 </div>
 
-                <!-- Filtres Type, Zone, Date -->
+                <!-- Filtre Zone -->
                 <div class="flex flex-wrap items-center justify-center gap-3 mb-4 pb-4 border-b border-gray-100">
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</span>
-                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'zone', 'date_order']), ['type' => null])) }}#activities" 
-                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ !request('type') ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Tous</a>
-                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'zone', 'date_order']), ['type' => 'formation'])) }}#activities" 
-                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ request('type') === 'formation' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Formations</a>
-                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'zone', 'date_order']), ['type' => 'event'])) }}#activities" 
-                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ request('type') === 'event' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Événements</a>
-
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide ml-2">Zone</span>
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Zone</span>
                     @php $zones = $zones ?? []; @endphp
                     <select onchange="window.location.href = this.value" class="rounded-lg border border-gray-300 text-sm py-1.5 px-3 bg-white">
-                        <option value="{{ route('home', array_merge(request()->only(['category', 'free', 'type', 'date_order']), ['zone' => 'all'])) }}#activities">Toutes les villes</option>
+                        <option value="{{ route('home', array_merge(request()->only(['category', 'free']), ['zone' => 'all'])) }}#activities">Toutes les villes</option>
                         @foreach($zones as $zone)
-                            <option value="{{ route('home', array_merge(request()->only(['category', 'free', 'type', 'date_order']), ['zone' => $zone['id']])) }}#activities" {{ request('zone') === $zone['id'] ? 'selected' : '' }}>{{ $zone['name'] }} – {{ $zone['region'] }}</option>
+                            <option value="{{ route('home', array_merge(request()->only(['category', 'free']), ['zone' => $zone['id']])) }}#activities" {{ request('zone') === $zone['id'] ? 'selected' : '' }}>{{ $zone['name'] }} – {{ $zone['region'] }}</option>
                         @endforeach
                     </select>
-
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide ml-2">Date</span>
-                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'type', 'zone']), ['date_order' => 'proche'])) }}#activities" 
-                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ request('date_order') === 'proche' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Proches</a>
-                    <a href="{{ route('home', array_merge(request()->only(['category', 'free', 'type', 'zone']), ['date_order' => 'lointain'])) }}#activities" 
-                       class="px-3 py-1.5 rounded-full text-sm font-medium {{ request('date_order') === 'lointain' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">Lointaines</a>
                 </div>
 
                 <!-- Desktop Filter Catégories + Gratuit -->
                 <div class="hidden md:block">
                     <div class="flex flex-wrap justify-center gap-2">
-                    <a href="{{ route('home', request()->only(['type', 'zone', 'date_order'])) }}#activities" 
+                    <a href="{{ route('home', request()->only(['zone'])) }}#activities" 
                        class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ !$selectedCategory && !$showFreeOnly ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
                         Toutes les activités
                     </a>
                     @foreach($categories as $category)
-                        <a href="{{ route('home', array_merge(request()->only(['type', 'zone', 'date_order']), ['category' => $category->id])) }}#activities" 
+                        <a href="{{ route('home', array_merge(request()->only(['zone']), ['category' => $category->id])) }}#activities" 
                            class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ $selectedCategory == $category->id ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/></svg>
                             {{ $category->name }}
@@ -255,7 +241,7 @@
                             $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
                         @endphp
                         @if($hasActiveSubscription)
-                            <a href="{{ route('home', array_merge(request()->only(['type', 'zone', 'date_order']), ['free' => 'true'])) }}#activities" 
+                            <a href="{{ route('home', array_merge(request()->only(['zone']), ['free' => 'true'])) }}#activities" 
                                class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ $showFreeOnly ? 'bg-green-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-green-50 hover:shadow-md' }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
                                 Gratuites uniquement
