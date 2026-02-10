@@ -21,7 +21,6 @@ class Registration extends Model
         'payment_method',
         'registration_data',
         'payment_transaction_id',
-        'payment_url',
         'payment_date',
         'payment_details',
     ];

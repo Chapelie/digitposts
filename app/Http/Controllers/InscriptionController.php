@@ -56,6 +56,7 @@ class InscriptionController extends Controller
         // Si l'activité est gratuite, vérifier l'abonnement "accès événements gratuits"
         if ($isFree) {
             if (!Subscription::hasActiveSubscription(Auth::id(), SubscriptionPlan::TYPE_FREE_EVENTS)) {
+                session(['url.intended' => route('inscriptions.create', $uuid)]);
                 return redirect()->route('subscriptions.checkout', ['plan' => 'free_events'])
                     ->with('error', 'Vous devez avoir un abonnement actif pour accéder aux événements gratuits.');
             }
@@ -119,6 +120,7 @@ class InscriptionController extends Controller
             }
 
             if ($isFree && !Subscription::hasActiveSubscription($user->id, SubscriptionPlan::TYPE_FREE_EVENTS)) {
+                session(['url.intended' => route('inscriptions.create', $feed->id)]);
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
@@ -198,7 +200,8 @@ class InscriptionController extends Controller
                 return redirect()->route('campaigns.show', $feed->id)
                     ->with('success', $message);
             } else {
-                // Rediriger directement vers le paiement
+                // Rediriger vers le paiement ; après paiement on reviendra sur la campagne
+                session(['url.intended' => route('campaigns.show', $feed->id)]);
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,

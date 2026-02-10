@@ -10,6 +10,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->
     <meta charset="utf-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" href="{{ asset('asset/logo.jpg') }}" type="image/jpeg" sizes="32x32">
     
     @include('components.seo-meta', [
         'title' => $seoTitle ?? 'DigitPosts',

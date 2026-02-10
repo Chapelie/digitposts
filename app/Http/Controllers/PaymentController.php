@@ -48,7 +48,8 @@ class PaymentController extends Controller
     }
 
     /**
-     * Initialiser un paiement
+     * Préparer un paiement pour le SDK Seamless (front).
+     * Retourne les données pour CinetPay.getCheckout() sans appeler l’API de création.
      */
     public function initiatePayment(Request $request)
     {
@@ -56,8 +57,7 @@ class PaymentController extends Controller
             $request->validate([
                 'registration_id' => 'required|uuid|exists:registrations,id',
                 'amount' => 'required|numeric|min:100',
-                'payment_method' => 'nullable|string',
-                'methods' => 'nullable|array',
+                'payment_method' => 'nullable|string|in:MOBILE_MONEY,CREDIT_CARD,WALLET,ALL',
             ]);
 
             $registration = Registration::with(['user', 'feed.feedable'])
@@ -66,78 +66,47 @@ class PaymentController extends Controller
                 ->firstOrFail();
 
             $feedable = $registration->feed->feedable;
-            $expectedAmount = $feedable->amount ?? 0;
+            $expectedAmount = (int) ($feedable->amount ?? 0);
 
-            // Vérifier que le montant correspond
-            if ($expectedAmount != $request->amount) {
+            if ($expectedAmount != (int) $request->amount) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Le montant ne correspond pas à l\'activité.'
                 ], 400);
             }
 
-            // Générer un transaction_id unique pour CinetPay
             $transactionId = 'TXN' . time() . Str::random(8);
+            $amount = $expectedAmount;
+            if ($amount % 5 !== 0) {
+                $amount = (int) ceil($amount / 5) * 5;
+            }
 
-            // Préparer les données pour le paiement CinetPay
-            $activityTitle = $feedable->title;
-            $baseUrl = rtrim(config('cinetpay.payment_base_url') ?? config('app.url'), '/');
-            $paymentData = [
+            $registration->update([
+                'payment_transaction_id' => $transactionId,
+                'payment_method' => 'online',
+            ]);
+
+            $channels = $request->filled('payment_method') && $request->payment_method !== 'ALL'
+                ? $request->payment_method
+                : 'ALL';
+
+            return response()->json([
+                'success' => true,
                 'transaction_id' => $transactionId,
-                'amount' => $request->amount,
+                'amount' => $amount,
                 'currency' => 'XOF',
-                'description' => 'Inscription à l\'activité: ' . $activityTitle,
-                'registration_id' => $registration->id,
-                'return_url' => $baseUrl.'/'.ltrim(route('payments.return', $registration->id, false), '/'),
-                'notify_url' => $baseUrl.'/'.ltrim(route('payments.notify', [], false), '/'),
-                'customer_name' => $registration->user->firstname,
-                'customer_surname' => $registration->user->lastname,
+                'channels' => $channels,
+                'description' => 'Inscription à l\'activité: ' . $feedable->title,
+                'customer_name' => $registration->user->firstname ?? 'Client',
+                'customer_surname' => $registration->user->lastname ?? '',
                 'customer_email' => $registration->user->email,
-                'customer_phone_number' => $registration->user->phone ?? null,
+                'customer_phone_number' => $registration->user->phone ?? '',
                 'customer_address' => $registration->user->location ?? 'Non renseigné',
-                'customer_city' => 'Abidjan',
-                'customer_country' => 'CI',
-                'customer_state' => 'CI',
-                'customer_zip_code' => null,
-                'lang' => 'fr',
-                'metadata' => json_encode([
-                    'registration_id' => $registration->id,
-                    'user_id' => $registration->user->id,
-                    'feed_id' => $registration->feed->id,
-                ])
-            ];
-
-            // Déterminer le channel selon la méthode sélectionnée
-            if ($request->has('payment_method') && $request->payment_method && $request->payment_method !== 'ALL') {
-                // Utiliser directement le channel CinetPay (MOBILE_MONEY, CREDIT_CARD, WALLET, ALL)
-                $paymentData['channels'] = $request->payment_method;
-            } else {
-                // Toutes les méthodes disponibles
-                $paymentData['channels'] = 'ALL';
-            }
-
-            // Créer le paiement via CinetPay
-            $paymentResult = $this->cinetPayService->createPayment($paymentData);
-
-            if ($paymentResult['success']) {
-                // Sauvegarder le transaction_id
-                $registration->update([
-                    'payment_transaction_id' => $transactionId,
-                    'payment_method' => 'online',
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'payment_url' => $paymentResult['payment_url'],
-                    'transaction_id' => $transactionId,
-                    'redirect_url' => route('payments.return', $registration->id)
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => $paymentResult['message'] ?? 'Erreur lors de l\'initialisation du paiement.'
-                ], 500);
-            }
+                'customer_city' => 'Ouagadougou',
+                'customer_country' => 'BF',
+                'customer_state' => 'BF',
+                'customer_zip_code' => '',
+            ]);
 
         } catch (\Exception $e) {
             Log::error('Erreur lors de l\'initialisation du paiement: ' . $e->getMessage());
@@ -375,11 +344,11 @@ class PaymentController extends Controller
                                 'status' => 'confirmed'
                             ]);
                             SendReceiptEmailJob::dispatch($registration->fresh());
-                            return redirect()->route('user.registrations')
-                                ->with('success', 'Paiement effectué avec succès ! Votre inscription est confirmée.');
-                        } elseif ($registration->payment_status === 'paid') {
-                            return redirect()->route('user.registrations')
-                                ->with('success', 'Paiement déjà effectué. Votre inscription est confirmée.');
+                        }
+                        if ($registration->payment_status === 'paid') {
+                            $url = session('url.intended', route('user.registrations'));
+                            session()->forget('url.intended');
+                            return redirect($url)->with('success', 'Paiement effectué avec succès ! Votre inscription est confirmée.');
                         }
                     }
                 }
@@ -394,6 +363,16 @@ class PaymentController extends Controller
             return redirect()->route('user.registrations')
                 ->with('error', 'Erreur lors de la vérification du paiement.');
         }
+    }
+
+    /**
+     * Redirection après paiement réussi (Seamless) vers la tâche voulue.
+     */
+    public function afterSuccess()
+    {
+        $url = session('url.intended', route('user.registrations'));
+        session()->forget('url.intended');
+        return redirect($url)->with('success', 'Paiement effectué avec succès ! Votre inscription est confirmée.');
     }
 
 } 

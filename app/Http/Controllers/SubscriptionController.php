@@ -58,7 +58,9 @@ class SubscriptionController extends Controller
         $user = Auth::user();
         $active = Subscription::getActiveSubscription($user->id, $planType);
         if ($active) {
-            return redirect()->route('subscriptions.index')
+            $url = session('url.intended', route('subscriptions.index'));
+            session()->forget('url.intended');
+            return redirect($url)
                 ->with('info', 'Vous avez déjà un abonnement actif pour ce plan jusqu\'au ' . $active->end_date->format('d/m/Y'));
         }
 
@@ -197,12 +199,14 @@ class SubscriptionController extends Controller
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
-            // Si déjà payé, rediriger directement
+            // Si déjà payé, rediriger vers la tâche voulue avant l'abonnement
             if ($subscription->payment_status === 'paid') {
                 $msg = $subscription->plan_type === SubscriptionPlan::TYPE_FREE_EVENTS
                     ? 'Abonnement activé ! Vous avez accès aux événements gratuits.'
                     : 'Abonnement activé ! Vous pouvez créer et publier des activités.';
-                return redirect()->route('subscriptions.index')->with('success', $msg);
+                $url = session('url.intended', route('subscriptions.index'));
+                session()->forget('url.intended');
+                return redirect($url)->with('success', $msg);
             }
 
             if ($subscription->payment_transaction_id) {
@@ -230,7 +234,9 @@ class SubscriptionController extends Controller
                             ? 'Abonnement activé ! Vous avez accès aux événements gratuits.'
                             : 'Abonnement activé ! Vous pouvez créer et publier des activités.';
 
-                        return redirect()->route('subscriptions.index')->with('success', $msg);
+                        $url = session('url.intended', route('subscriptions.index'));
+                        session()->forget('url.intended');
+                        return redirect($url)->with('success', $msg);
                     } elseif ($status === 'PENDING') {
                         // Le paiement est en attente, rediriger vers la page de checkout avec un message
                         return redirect()->route('subscriptions.checkout', ['plan' => $subscription->plan_type])

@@ -29,50 +29,28 @@
     @endif
 
     <!-- Hero Section with Swiper (image + écritures par slide) -->
-    <section class="relative bg-white text-gray-900 overflow-hidden min-h-[600px] md:min-h-[700px] flex flex-col">
+    <section class="relative bg-white text-gray-900 overflow-hidden min-h-[420px] md:min-h-[500px] flex flex-col">
         @if(isset($swiperFeeds) && $swiperFeeds->count() > 0)
-        @php
-            $heroSwiperData = [
-                'descriptionShort' => config('digitposts.description_short'),
-                'feeds' => $swiperFeeds->map(function($feed) {
-                    $item = $feed->feedable;
-                    $isEvent = $feed->feedable_type === \App\Models\Event::class;
-                    return [
-                        'id' => $feed->id,
-                        'isEvent' => $isEvent,
-                        'title' => $item->title,
-                        'imageUrl' => asset('storage/' . $item->file),
-                        'dateFormatted' => $item->start_date ? \Carbon\Carbon::parse($item->start_date)->translatedFormat('l d F Y' . ($isEvent ? ' \à H:i' : '')) : null,
-                        'location' => $item->location ?? $item->place ?? null,
-                        'showUrl' => route('campaigns.show', $feed->id),
-                        'typeLabel' => $isEvent ? 'Événement' : 'Formation',
-                        'ctaLabel' => $isEvent ? "Voir l'événement" : 'Voir la formation',
-                        'badgeClass' => $isEvent ? 'bg-amber-400/90 text-amber-900' : 'bg-blue-500/90 text-white',
-                    ];
-                })->values()->toArray(),
-            ];
-        @endphp
-        <script>window.heroSwiperData = @json($heroSwiperData);</script>
-        <!-- Swiper : slide 1 = intro (HTML), slides feed construites en JS -->
-        <div class="relative w-full flex-1 min-h-[340px] md:min-h-[420px]">
-            <div class="swiper hero-swiper h-full">
+        <!-- Hero Swiper : slide intro + slides formations/événements (image + écritures) -->
+        <div class="relative w-full h-[320px] md:h-[380px]">
+            <div class="swiper hero-swiper h-full w-full">
                 <div class="swiper-wrapper">
-                    {{-- Slide 1 : intro avec les écritures Plateforme / Découvrez les... / description --}}
-                    <div class="swiper-slide hero-slide-intro">
+                    {{-- Slide 1 : intro --}}
+                    <div class="swiper-slide">
                         <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50"></div>
                         <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%);"></div>
-                        <div class="hero-slide-content absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-10">
-                            <div class="flex flex-wrap items-center justify-center gap-3 mb-4">
-                                <div class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                        <div class="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-8">
+                            <div class="flex flex-wrap items-center justify-center gap-3 mb-3">
+                                <span class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="mr-1.5 h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                                     Plateforme de Formations & Événements
-                                </div>
-                                <div class="crown-badge inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-400/90 text-amber-900 rounded-full text-xs font-bold shadow-lg animate-crown-glow">
+                                </span>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-400/90 text-amber-900 rounded-full text-xs font-bold shadow-lg animate-crown-glow">
                                     <svg class="w-4 h-4 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
                                     Gratuit
-                                </div>
+                                </span>
                             </div>
-                            <h1 class="text-2xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight text-gray-900">
+                            <h1 class="text-2xl md:text-4xl lg:text-5xl font-bold mb-2 leading-tight text-gray-900">
                                 <span>Découvrez les</span><br><span class="text-blue-600">Meilleures Formations</span><br><span>& Événements</span>
                             </h1>
                             <p class="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
@@ -80,9 +58,35 @@
                             </p>
                         </div>
                     </div>
-                    {{-- Slides feed construites en JS (window.heroSwiperData.feeds) --}}
+                    @foreach($swiperFeeds as $feed)
+                        @php $item = $feed->feedable; $isEvent = $feed->feedable_type === \App\Models\Event::class; @endphp
+                        <div class="swiper-slide">
+                            <div class="absolute inset-0">
+                                <img src="{{ asset('storage/' . $item->file) }}" alt="{{ $item->title }} - {{ $isEvent ? 'Événement' : 'Formation' }} sur DigitPosts" class="w-full h-full object-cover" loading="lazy">
+                                <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70"></div>
+                            </div>
+                            <div class="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-8">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 {{ $isEvent ? 'bg-amber-400/90 text-amber-900' : 'bg-blue-500/90 text-white' }} rounded-full text-xs font-bold shadow-lg mb-3">
+                                    <svg class="w-4 h-4 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                                    {{ $isEvent ? 'Événement' : 'Formation' }}
+                                </span>
+                                <h2 class="text-xl md:text-3xl lg:text-4xl font-bold text-white drop-shadow-lg mb-2 max-w-4xl">{{ $item->title }}</h2>
+                                @if($item->start_date)
+                                    <p class="text-sm md:text-base text-blue-200 drop-shadow-md">
+                                        {{ \Carbon\Carbon::parse($item->start_date)->translatedFormat('l d F Y' . ($isEvent ? ' \à H:i' : '')) }}
+                                    </p>
+                                @endif
+                                @if(!empty($item->location ?? $item->place ?? null))
+                                    <p class="text-sm text-gray-200 mt-1 drop-shadow">{{ $item->location ?? $item->place }}</p>
+                                @endif
+                                <a href="{{ route('campaigns.show', $feed->id) }}" class="mt-4 inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg">
+                                    {{ $isEvent ? "Voir l'événement" : 'Voir la formation' }}
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
-                <div class="hero-swiper-pagination absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2"></div>
+                <div class="hero-swiper-pagination absolute bottom-3 left-0 right-0 z-20"></div>
             </div>
         </div>
         @else
@@ -125,7 +129,7 @@
                         Voir les Activités
                     </a>
                     @auth
-                        <a href="{{ route('campaigns.create') }}" class="inline-flex items-center justify-center px-7 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-base transition-all duration-300 transform hover:scale-105 shadow-lg ring-2 ring-white/30 ring-offset-2 ring-offset-transparent">
+                        <a href="{{ route('campaigns.create') }}" class="inline-flex items-center justify-center px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-base transition-all duration-300 transform hover:scale-105 shadow-lg ring-2 ring-blue-800/60 ring-offset-2 ring-offset-white">
                             <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -133,7 +137,7 @@
                             Créer une Activité
                         </a>
                     @else
-                        <a href="{{ route('campaigns.create') }}" class="inline-flex items-center justify-center px-7 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-base transition-all duration-300 transform hover:scale-105 shadow-lg ring-2 ring-white/30 ring-offset-2 ring-offset-transparent">
+                        <a href="{{ route('campaigns.create') }}" class="inline-flex items-center justify-center px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-base transition-all duration-300 transform hover:scale-105 shadow-lg ring-2 ring-blue-800/60 ring-offset-2 ring-offset-white">
                             <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -713,9 +717,14 @@
             transform: scale(1.02);
         }
 
-        /* Hero Swiper Styles */
+        /* Hero Swiper : hauteur fixe pour que Swiper calcule correctement */
         .hero-swiper {
             width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .hero-swiper .swiper-wrapper {
             height: 100%;
         }
 
@@ -732,13 +741,27 @@
             object-fit: cover;
         }
 
-        /* Contenu des slides (écritures) toujours au-dessus et visible */
-        .hero-swiper .hero-slide-content {
-            pointer-events: auto;
+        /* Pagination hero : points visibles */
+        .hero-swiper-pagination.swiper-pagination {
+            position: absolute;
+            bottom: 0.75rem;
+            left: 0;
+            right: 0;
+            text-align: center;
+            z-index: 20;
         }
 
-        .hero-swiper .hero-slide-intro .hero-slide-content {
-            max-width: 42rem;
+        .hero-swiper-pagination .swiper-pagination-bullet {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            opacity: 1;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .hero-swiper-pagination .swiper-pagination-bullet-active {
+            background: #3b82f6;
+            transform: scale(1.25);
         }
 
         /* Swiper Styles */
@@ -927,51 +950,37 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     
     <script>
-        // Hero swiper : slides feed construites en JS à partir de window.heroSwiperData
+        // Hero Swiper : initialisation après chargement du DOM et de la lib
         @if(isset($swiperFeeds) && $swiperFeeds->count() > 0)
-        document.addEventListener('DOMContentLoaded', function() {
-            const data = window.heroSwiperData;
-            const wrapper = document.querySelector('.hero-swiper .swiper-wrapper');
-            if (!wrapper || !data || !data.feeds || !data.feeds.length) {
-                if (wrapper && typeof Swiper !== 'undefined') {
-                    new Swiper('.hero-swiper', { slidesPerView: 1, spaceBetween: 0 });
+        (function() {
+            function initHeroSwiper() {
+                var el = document.querySelector('.hero-swiper');
+                if (!el) return;
+                if (typeof Swiper === 'undefined') {
+                    setTimeout(initHeroSwiper, 50);
+                    return;
                 }
-                return;
+                var totalSlides = 1 + {{ $swiperFeeds->count() }};
+                new Swiper('.hero-swiper', {
+                    slidesPerView: 1,
+                    spaceBetween: 0,
+                    loop: totalSlides > 1,
+                    autoplay: { delay: 5000, disableOnInteraction: false },
+                    effect: 'fade',
+                    fadeEffect: { crossFade: true },
+                    speed: 600,
+                    pagination: { el: '.hero-swiper-pagination', clickable: true },
+                    allowTouchMove: true,
+                    observer: true,
+                    observeParents: true,
+                });
             }
-            const crownSvg = '<svg class="w-4 h-4 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>';
-            data.feeds.forEach(function(feed) {
-                const slide = document.createElement('div');
-                slide.className = 'swiper-slide';
-                const dateHtml = feed.dateFormatted ? '<p class="text-base md:text-lg text-blue-200 drop-shadow-md">' + escapeHtml(feed.dateFormatted) + '</p>' : '';
-                const locationHtml = feed.location ? '<p class="text-sm md:text-base text-gray-200 mt-1 drop-shadow">' + escapeHtml(feed.location) + '</p>' : '';
-                slide.innerHTML =
-                    '<div class="absolute inset-0 z-0">' +
-                    '<img src="' + escapeAttr(feed.imageUrl) + '" alt="' + escapeAttr(feed.title) + ' - ' + escapeAttr(feed.typeLabel) + ' sur DigitPosts" class="w-full h-full object-cover" loading="lazy">' +
-                    '<div class="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/65"></div>' +
-                    '</div>' +
-                    '<div class="hero-slide-content absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-10">' +
-                    '<div class="inline-flex items-center gap-1.5 px-3 py-1.5 ' + escapeAttr(feed.badgeClass) + ' rounded-full text-xs font-bold shadow-lg animate-crown-glow mb-3">' + crownSvg + escapeHtml(feed.typeLabel) + '</div>' +
-                    '<h2 class="text-2xl md:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg mb-2 max-w-4xl">' + escapeHtml(feed.title) + '</h2>' +
-                    dateHtml + locationHtml +
-                    '<a href="' + escapeAttr(feed.showUrl) + '" class="mt-5 inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg">' + escapeHtml(feed.ctaLabel) + '</a>' +
-                    '</div>';
-                wrapper.appendChild(slide);
-            });
-            function escapeHtml(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-            function escapeAttr(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML.replace(/"/g, '&quot;'); }
-            const totalSlides = 1 + data.feeds.length;
-            new Swiper('.hero-swiper', {
-                slidesPerView: 1,
-                spaceBetween: 0,
-                loop: totalSlides > 1,
-                autoplay: { delay: 5000, disableOnInteraction: false, pauseOnMouseEnter: false },
-                effect: 'fade',
-                fadeEffect: { crossFade: true },
-                speed: 1500,
-                pagination: { el: '.hero-swiper-pagination', clickable: true },
-                allowTouchMove: false,
-            });
-        });
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initHeroSwiper);
+            } else {
+                initHeroSwiper();
+            }
+        })();
         @endif
     </script>
 @endsection

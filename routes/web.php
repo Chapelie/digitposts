@@ -61,6 +61,7 @@ Route::middleware(['auth'])->group(function () {
     
     // Routes de paiement (rate limit pour scalabilité)
     Route::get('/payments/seamless-checkout/{registrationId}', [PaymentController::class, 'seamlessCheckout'])->name('payments.seamless-checkout');
+    Route::get('/payments/after-success', [PaymentController::class, 'afterSuccess'])->name('payments.after-success');
     Route::get('/payments/return/{registrationId}', [PaymentController::class, 'handleReturn'])->name('payments.return');
     Route::post('/payments/initiate', [PaymentController::class, 'initiatePayment'])->name('payments.initiate')->middleware('throttle:20,1');
     Route::post('/payments/check-status', [PaymentController::class, 'checkPaymentStatus'])->name('payments.check-status')->middleware('throttle:30,1');

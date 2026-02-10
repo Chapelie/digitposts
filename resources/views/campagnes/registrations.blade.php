@@ -177,8 +177,8 @@
                                     {{ $registration->created_at->format('d/m/Y H:i') }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    @if($registration->payment_status === 'pending' && $registration->payment_url)
-                                        <a href="{{ $registration->payment_url }}" target="_blank" 
+                                    @if($registration->payment_status === 'pending')
+                                        <a href="{{ route('payments.seamless-checkout', $registration->id) }}" target="_blank" 
                                            class="text-blue-600 hover:text-blue-900 mr-3">
                                             Payer
                                         </a>

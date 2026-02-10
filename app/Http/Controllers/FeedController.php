@@ -30,6 +30,7 @@ class FeedController extends Controller
             }
 
             if (!Subscription::hasActiveSubscription(Auth::id(), SubscriptionPlan::TYPE_FREE_EVENTS)) {
+                session(['url.intended' => route('home', ['free' => 'true'])]);
                 return redirect()->route('subscriptions.checkout', ['plan' => 'free_events'])
                     ->with('error', 'Vous devez avoir un abonnement actif pour accéder aux événements gratuits.');
             }

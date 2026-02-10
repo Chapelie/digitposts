@@ -172,6 +172,7 @@ class CreatorController extends Controller{
                  $isFree = !$canPaid || $amount <= 0;
              }
              if (!$isFree && !Subscription::hasActiveSubscription($user->id, \App\Models\SubscriptionPlan::TYPE_CREATE_ACTIVITIES)) {
+                 session(['url.intended' => route('campaigns.create')]);
                  return redirect()->route('subscriptions.checkout', ['plan' => 'create_activities'])
                      ->with('error', 'Pour publier une activité payante, abonnez-vous au plan "Création d\'activités". Les activités gratuites (prix 0, paiement désactivé) peuvent être publiées sans abonnement.');
              }

@@ -184,7 +184,7 @@
                     <span>Payer {{ $registration->feed->feedable->formatted_price }}</span>
                 </button>
                 <p class="text-sm text-gray-500 mt-3">Paiement sécurisé et crypté</p>
-                <p class="text-xs text-gray-400 mt-2">Vous serez redirigé vers notre plateforme de paiement sécurisée</p>
+                <p class="text-xs text-gray-400 mt-2">Le guichet CinetPay s'ouvrira pour finaliser le paiement</p>
             </div>
         </div>
         @endif
@@ -241,41 +241,40 @@
 }
 </style>
 
+@section('head')
+<script src="https://cdn.cinetpay.com/seamless/main.js" type="text/javascript"></script>
+@endsection
+
+@php
+    $cinetpayBase = rtrim(config('cinetpay.payment_base_url') ?? config('app.url'), '/');
+    $cinetpayNotifyUrl = $cinetpayBase . '/' . ltrim(route('payments.notify', [], false), '/');
+@endphp
 <script>
-// Gestion de la sélection des méthodes de paiement
+window.cinetpayConfig = {
+    apikey: @json(config('cinetpay.api_key')),
+    site_id: @json(config('cinetpay.site_id')),
+    notify_url: @json($cinetpayNotifyUrl)
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     const methodCards = document.querySelectorAll('.payment-method-card');
-    
     methodCards.forEach(card => {
         card.addEventListener('click', function() {
-            // Désélectionner toutes les cartes
             methodCards.forEach(c => {
                 c.classList.remove('border-blue-500', 'bg-blue-50');
                 c.classList.add('border-gray-200', 'bg-white');
             });
-            
-            // Sélectionner la carte cliquée
             this.classList.remove('border-gray-200', 'bg-white');
             this.classList.add('border-blue-500', 'bg-blue-50');
-            
-            // Cocher le radio correspondant
             const radio = this.querySelector('input[type="radio"]');
-            if (radio) {
-                radio.checked = true;
-            }
+            if (radio) radio.checked = true;
         });
     });
-    
-    // Cocher "Toutes les méthodes" par défaut
     const allMethodsCard = document.querySelector('[data-method="ALL"]');
-    if (allMethodsCard) {
-        allMethodsCard.classList.add('border-blue-500', 'bg-blue-50');
-    }
+    if (allMethodsCard) allMethodsCard.classList.add('border-blue-500', 'bg-blue-50');
 });
 
-// Initialisation du paiement
 function initiatePayment() {
-    // Vérifier qu'une méthode est sélectionnée
     const selectedMethod = document.querySelector('input[name="payment_method"]:checked');
     if (!selectedMethod) {
         showNotification('error', 'Veuillez sélectionner une méthode de paiement.');
@@ -284,144 +283,100 @@ function initiatePayment() {
 
     const payButton = document.getElementById('payButton');
     payButton.disabled = true;
-    payButton.innerHTML = `
-        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        Initialisation du paiement...
-    `;
+    payButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Initialisation...';
 
-    // Préparer les données du paiement
-    const paymentData = {
+    const payload = {
         registration_id: '{{ $registration->id }}',
-        amount: {{ $registration->feed->feedable->amount ?? 0 }},
-        payment_method: selectedMethod.value === 'all' ? null : selectedMethod.value
+        amount: {{ (int) ($registration->feed->feedable->amount ?? 0) }},
+        payment_method: selectedMethod.value === 'ALL' ? null : selectedMethod.value
     };
-    
-    // Si une méthode spécifique est sélectionnée, l'envoyer
-    if (selectedMethod.value !== 'all') {
-        paymentData.methods = [selectedMethod.value];
-    }
 
-    // Appel API pour initialiser le paiement
     fetch('{{ route("payments.initiate") }}', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify(paymentData)
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        body: JSON.stringify(payload)
     })
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
-        if (data.success && data.payment_url) {
-            // Rediriger vers la page de paiement externe
-            window.location.href = data.payment_url;
-        } else {
-            showNotification('error', data.message || 'Erreur lors de l\'initialisation du paiement.');
+        if (!data.success) {
+            showNotification('error', data.message || 'Erreur lors de l\'initialisation.');
             resetPayButton();
+            return;
         }
+        const cfg = window.cinetpayConfig;
+        if (!cfg || !cfg.apikey || !cfg.site_id) {
+            showNotification('error', 'Configuration CinetPay manquante.');
+            resetPayButton();
+            return;
+        }
+        CinetPay.setConfig({
+            apikey: cfg.apikey,
+            site_id: cfg.site_id,
+            notify_url: cfg.notify_url,
+            close_after_response: true
+        });
+        CinetPay.getCheckout({
+            transaction_id: data.transaction_id,
+            amount: data.amount,
+            currency: data.currency,
+            channels: data.channels,
+            description: data.description,
+            customer_name: data.customer_name,
+            customer_surname: data.customer_surname,
+            customer_email: data.customer_email,
+            customer_phone_number: data.customer_phone_number || '',
+            customer_address: data.customer_address,
+            customer_city: data.customer_city,
+            customer_country: data.customer_country,
+            customer_state: data.customer_state,
+            customer_zip_code: data.customer_zip_code || ''
+        });
+        CinetPay.waitResponse(function(res) {
+            if (res.status === 'REFUSED') {
+                showNotification('error', 'Votre paiement a échoué.');
+                resetPayButton();
+            } else if (res.status === 'ACCEPTED') {
+                showNotification('success', 'Paiement effectué avec succès !');
+                setTimeout(function() { window.location.href = '{{ route("payments.after-success") }}'; }, 1500);
+            }
+        });
+        CinetPay.onClose(function(res) {
+            if (res && res.status === 'REFUSED') {
+                showNotification('error', 'Votre paiement a échoué.');
+            } else if (res && res.status === 'ACCEPTED') {
+                showNotification('success', 'Paiement effectué avec succès !');
+                setTimeout(function() { window.location.href = '{{ route("payments.after-success") }}'; }, 1500);
+                return;
+            }
+            resetPayButton();
+        });
+        CinetPay.onError(function(err) {
+            console.error('CinetPay error', err);
+            showNotification('error', 'Erreur du guichet de paiement.');
+            resetPayButton();
+        });
     })
-    .catch(error => {
-        console.error('Erreur:', error);
-        showNotification('error', 'Erreur lors de l\'initialisation du paiement. Veuillez réessayer.');
+    .catch(function(err) {
+        console.error(err);
+        showNotification('error', 'Erreur lors de l\'initialisation. Veuillez réessayer.');
         resetPayButton();
     });
 }
 
-// Réinitialiser le bouton de paiement
 function resetPayButton() {
     const payButton = document.getElementById('payButton');
+    if (!payButton) return;
     payButton.disabled = false;
-    payButton.innerHTML = `
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-        </svg>
-        <span>Payer {{ $registration->feed->feedable->formatted_price }}</span>
-    `;
+    payButton.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg><span>Payer {{ $registration->feed->feedable->formatted_price }}</span>';
 }
 
-// Afficher les notifications
 function showNotification(type, message) {
-    // Créer une notification toast
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
-        type === 'success' ? 'bg-green-500 text-white' :
-        type === 'error' ? 'bg-red-500 text-white' :
-        'bg-yellow-500 text-white'
-    }`;
-    
-    notification.innerHTML = `
-        <div class="flex items-center space-x-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                ${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' :
-                  type === 'error' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>' :
-                  '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>'}
-            </svg>
-            <span>${message}</span>
-        </div>
-    `;
-    
+    var notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ' +
+        (type === 'success' ? 'bg-green-500 text-white' : type === 'error' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-white');
+    notification.innerHTML = '<div class="flex items-center space-x-2"><span>' + message + '</span></div>';
     document.body.appendChild(notification);
-    
-    // Supprimer la notification après 5 secondes
-    setTimeout(() => {
-        notification.remove();
-    }, 5000);
+    setTimeout(function() { notification.remove(); }, 5000);
 }
-
-// Vérifier si le paiement a été effectué (pour les retours)
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('payment') === 'success') {
-        showNotification('success', 'Paiement effectué avec succès !');
-        // Rediriger vers les inscriptions après 2 secondes
-        setTimeout(() => {
-            window.location.href = '{{ route("user.registrations") }}';
-        }, 2000);
-    } else if (urlParams.get('payment') === 'error') {
-        showNotification('error', 'Erreur lors du paiement. Veuillez réessayer.');
-    }
-    
-    // Vérifier automatiquement le statut du paiement toutes les 5 secondes si en attente
-    @if($registration->payment_status !== 'paid' && $registration->payment_transaction_id)
-    let checkCount = 0;
-    const maxChecks = 12; // Vérifier pendant 1 minute (12 * 5 secondes)
-    
-    const checkPaymentStatus = setInterval(function() {
-        if (checkCount >= maxChecks) {
-            clearInterval(checkPaymentStatus);
-            return;
-        }
-        
-        checkCount++;
-        
-        fetch('{{ route("payments.check-status") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                transaction_id: '{{ $registration->payment_transaction_id }}'
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.payment.cinetpay_status === 'ACCEPTED') {
-                clearInterval(checkPaymentStatus);
-                showNotification('success', 'Paiement confirmé ! Redirection...');
-                setTimeout(() => {
-                    window.location.href = '{{ route("user.registrations") }}';
-                }, 2000);
-            }
-        })
-        .catch(error => {
-            console.error('Erreur lors de la vérification:', error);
-        });
-    }, 5000);
-    @endif
-});
 </script>
 @endsection 
