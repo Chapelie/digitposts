@@ -59,10 +59,14 @@
                         </div>
                     </div>
                     @foreach($swiperFeeds as $feed)
-                        @php $item = $feed->feedable; $isEvent = $feed->feedable_type === \App\Models\Event::class; @endphp
+                        @php 
+                            $item = $feed->feedable; 
+                            $isEvent = $feed->feedable_type === \App\Models\Event::class;
+                            $imgSrc = ($item && !empty($item->file)) ? asset('storage/' . $item->file) : asset('asset/image1_large.jpg');
+                        @endphp
                         <div class="swiper-slide">
                             <div class="absolute inset-0">
-                                <img src="{{ asset('storage/' . $item->file) }}" alt="{{ $item->title }} - {{ $isEvent ? 'Événement' : 'Formation' }} sur DigitPosts" class="w-full h-full object-cover" loading="lazy">
+                                <img src="{{ $imgSrc }}" alt="{{ $item?->title ?? '' }} - {{ $isEvent ? 'Événement' : 'Formation' }} sur DigitPosts" class="w-full h-full object-cover" loading="lazy">
                                 <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70"></div>
                             </div>
                             <div class="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-4 py-8">
