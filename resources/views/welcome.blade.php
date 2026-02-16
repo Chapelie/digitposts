@@ -29,9 +29,9 @@
     @endif
 
     <!-- Hero Section with Swiper (image + écritures par slide) -->
+    @php $swiperFeeds = $swiperFeeds ?? collect(); @endphp
     <section class="relative bg-white text-gray-900 overflow-hidden min-h-[420px] md:min-h-[500px] flex flex-col">
-        @if(isset($swiperFeeds) && $swiperFeeds->count() > 0)
-        <!-- Hero Swiper : slide intro + slides formations/événements (image + écritures) -->
+        <!-- Hero Swiper : slide intro + slides formations/événements (toujours affiché, au moins l'intro) -->
         <div class="relative w-full h-[320px] md:h-[380px]">
             <div class="swiper hero-swiper h-full w-full">
                 <div class="swiper-wrapper">
@@ -93,18 +93,11 @@
                 <div class="hero-swiper-pagination absolute bottom-3 left-0 right-0 z-20"></div>
             </div>
         </div>
-        @else
-        <!-- Fallback sans swiper -->
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50"></div>
-        <div class="absolute inset-0 opacity-30">
-            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%);"></div>
-        </div>
-        @endif
 
-        <div class="relative z-10 container mx-auto px-4 py-6 md:py-8 w-full {{ (isset($swiperFeeds) && $swiperFeeds->count() > 0) ? 'bg-white/95 backdrop-blur-sm border-t border-white/20' : '' }}">
+        <div class="relative z-10 container mx-auto px-4 py-6 md:py-8 w-full bg-white/95 backdrop-blur-sm border-t border-white/20">
             <div class="max-w-4xl mx-auto text-center">
-                @if(!isset($swiperFeeds) || $swiperFeeds->count() === 0)
-                <!-- Badge + Couronne (affichés seulement sans swiper) -->
+                @if($swiperFeeds->count() === 0)
+                <!-- Badge + titre (affichés aussi sous le swiper quand aucune slide feed) -->
                 <div class="flex flex-wrap items-center justify-center gap-3 mb-4">
                     <div class="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
                         <svg xmlns="http://www.w3.org/2000/svg" class="mr-1.5 h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
@@ -148,14 +141,14 @@
                             </svg>
                             Créer une Activité
                         </a>
-                        <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-6 py-3 border-2 font-semibold rounded-lg text-base transition-all duration-300 {{ (isset($swiperFeeds) && $swiperFeeds->count() > 0) ? 'border-gray-300 text-gray-700 hover:bg-gray-100' : 'border-white/80 text-white hover:bg-white/10' }}">
+                        <a href="{{ route('register') }}" class="inline-flex items-center justify-center px-6 py-3 border-2 font-semibold rounded-lg text-base transition-all duration-300 {{ $swiperFeeds->count() > 0 ? 'border-gray-300 text-gray-700 hover:bg-gray-100' : 'border-gray-300 text-gray-700 hover:bg-gray-100' }}">
                             S'inscrire
                         </a>
                     @endauth
                 </div>
 
                 <!-- Nombre de formations et événements disponibles -->
-                <p class="text-sm mb-3 {{ (isset($swiperFeeds) && $swiperFeeds->count() > 0) ? 'text-gray-700' : 'text-white/90' }}">Formations et événements disponibles</p>
+                <p class="text-sm mb-3 text-gray-700">Formations et événements disponibles</p>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
                     <div class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
                         <div class="text-xl md:text-2xl font-bold text-blue-600 mb-0.5">{{ $trainingFeeds->count() }}</div>
@@ -940,8 +933,7 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     
     <script>
-        // Hero Swiper : initialisation après chargement du DOM et de la lib
-        @if(isset($swiperFeeds) && $swiperFeeds->count() > 0)
+        // Hero Swiper : toujours initialiser (au moins la slide intro)
         (function() {
             function initHeroSwiper() {
                 var el = document.querySelector('.hero-swiper');
@@ -971,6 +963,5 @@
                 initHeroSwiper();
             }
         })();
-        @endif
     </script>
 @endsection
