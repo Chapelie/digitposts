@@ -25,8 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);
         
-        $middleware->web([
-            \App\Http\Middleware\VerifyCsrfToken::class,
+        // Remplacer le CSRF du framework : sinon $except dans App\VerifyCsrfToken ne sert à rien
+        // (CinetPay POST /payments/notify recevait 419 avant d’atteindre le 2e middleware).
+        $middleware->web(replace: [
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class => \App\Http\Middleware\VerifyCsrfToken::class,
         ]);
 
         // Rate limiting global pour les routes API
