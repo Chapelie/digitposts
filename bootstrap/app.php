@@ -31,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class => \App\Http\Middleware\VerifyCsrfToken::class,
         ]);
 
+        $middleware->web(append: [
+            \App\Http\Middleware\ExpireLegacySessionCookie::class,
+        ]);
+
         // Rate limiting global pour les routes API
         $middleware->api(prepend: [
             \Illuminate\Routing\Middleware\ThrottleRequests::class . ':60,1',
