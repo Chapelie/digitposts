@@ -20,6 +20,17 @@
         <form action="{{ route('campaigns.store', [], false) }}" method="POST" enctype="multipart/form-data">
             @csrf
 
+            @if ($errors->any())
+                <div class="rounded-lg border border-red-200 bg-red-50 p-4 mb-6">
+                    <div class="font-semibold text-red-800 mb-2">Vous devez corriger les erreurs suivantes :</div>
+                    <ul class="list-disc pl-5 text-sm text-red-700 space-y-1">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             @php
                 $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_CREATE_ACTIVITIES);
             @endphp
@@ -478,7 +489,22 @@
         // Gestion du type de publication
         document.querySelectorAll('input[name="type"]').forEach(radio => {
             radio.addEventListener('change', function() {
-                document.getElementById('end-date-container').classList.toggle('hidden', this.value !== 'training');
+                const endDateContainer = document.getElementById('end-date-container');
+                const endDateInput = document.getElementById('end_date');
+
+                if (endDateContainer) {
+                    endDateContainer.classList.toggle('hidden', this.value !== 'training');
+                }
+
+                // Quand on passe sur "event", on vide/désactive end_date pour éviter les erreurs de validation.
+                if (endDateInput) {
+                    if (this.value !== 'training') {
+                        endDateInput.value = '';
+                        endDateInput.disabled = true;
+                    } else {
+                        endDateInput.disabled = false;
+                    }
+                }
                 updatePreview();
             });
         });

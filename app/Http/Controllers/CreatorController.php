@@ -137,6 +137,13 @@ class CreatorController extends Controller{
 
      public function campaignStore(Request $request){
             $user = Auth::user();
+
+            // Si l'utilisateur choisit "event", on ignore end_date côté serveur.
+            // (Le champ peut rester rempli même s'il est masqué dans le formulaire.)
+            if ($request->input('type') === 'event') {
+                $request->merge(['end_date' => null]);
+            }
+
              $request->validate([
                  'type' => 'required|in:event,training',
                  'title' => 'required|string|max:255',
@@ -158,7 +165,6 @@ class CreatorController extends Controller{
                  'file.max' => 'Le fichier ne doit pas dépasser 5MB.',
                  'categories.max' => 'Vous ne pouvez sélectionner que 10 catégories maximum.',
              ]);
-             dd('validsate');
          // Publier : si prix = 0 ET paiement désactivé (gratuit), pas d'abonnement requis
          $status = $request->input('status', 'brouillon');
          if ($status === 'publiée') {
