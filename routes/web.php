@@ -48,7 +48,11 @@ Route::middleware(['guest'])->group(function () {
 Route::get('/inscriptions/{uuid}/create', [InscriptionController::class, 'create'])->name('inscriptions.create');
 
 Route::middleware(['auth'])->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    // GET + POST : le GET évite le 419 quand la session/token CSRF est incohérente (double cookie, etc.)
+    // Trade-off : un site tiers peut forcer la déconnexion (lien image) — impact limité.
+    Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])
+        ->name('logout')
+        ->middleware('throttle:60,1');
     // Routes du créateur (pour les créateurs d'activités)
     Route::get('/creator/dashboard', [Creatorcontroller::class,'index'])->name('creator.dashboard');
     Route::get('/creator/campaigns/new', [CreatorController::class,'campaignCreate'])->name('campaigns.create');
