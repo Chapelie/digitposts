@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test paiement CinetPay (Seamless)</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; background: #f3f4f6; }
+        h1 { font-size: 1.5rem; margin-bottom: 8px; color: #111; }
+        p.sub { color: #6b7280; font-size: 0.875rem; margin-bottom: 24px; }
+        .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+        label { display: block; font-weight: 500; color: #374151; margin-bottom: 4px; font-size: 0.875rem; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 16px; font-size: 0.875rem; }
+        input:focus, select:focus { outline: none; border-color: #2563eb; ring: 2px #2563eb; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        button { width: 100%; padding: 14px; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; }
+        button:hover { background: #1d4ed8; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        #log { margin-top: 20px; padding: 12px; background: #1f2937; color: #e5e7eb; border-radius: 8px; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+        .toast { position: fixed; top: 16px; right: 16px; padding: 12px 16px; border-radius: 8px; color: #fff; z-index: 9999; max-width: 320px; }
+        .toast.success { background: #059669; }
+        .toast.error { background: #dc2626; }
+    </style>
+</head>
+<body>
+    <h1>Test paiement CinetPay (Seamless)</h1>
+    <p class="sub">Page autonome pour tester uniquement le guichet de paiement. Renseignez vos identifiants CinetPay et les données de test.</p>
+    <p class="sub" style="background: #fef3c7; padding: 8px 12px; border-radius: 8px; margin-bottom: 16px;">En cas d’erreur <strong>624 UNKNOWN_ERROR</strong> : vérifiez API Key et Site ID (back-office CinetPay), que Notify URL et Return URL sont des URLs valides accessibles (pas localhost sauf via ngrok), et que la devise (XOF/XAF) correspond à votre compte CinetPay.</p>
+
+    <div class="card">
+        <h2 style="margin: 0 0 16px 0; font-size: 1rem;">Configuration CinetPay</h2>
+        <label>API Key</label>
+        <input type="text" id="apikey" placeholder="Votre apikey CinetPay" autocomplete="off">
+        <label>Site ID</label>
+        <input type="text" id="site_id" placeholder="Votre site_id" autocomplete="off">
+        <label>Notify URL (comme dans l’app : base URL + /payments/notify)</label>
+        <input type="url" id="notify_url" placeholder="https://votre-domaine.com/payments/notify" value="https://example.com/notify">
+        <p class="sub" style="margin: -8px 0 16px 0;">En local, utilise l’URL ngrok (ex. https://xxx.ngrok.io/payments/notify). L’app ne passe pas return_url ni mode au SDK.</p>
+    </div>
+
+    <div class="card">
+        <h2 style="margin: 0 0 16px 0; font-size: 1rem;">Transaction</h2>
+        <div class="row">
+            <div>
+                <label>Montant (XOF)</label>
+                <input type="number" id="amount" value="500" min="100" step="100" placeholder="500">
+            </div>
+            <div>
+                <label>Transaction ID</label>
+                <input type="text" id="transaction_id" placeholder="TXN123..." value="">
+            </div>
+        </div>
+        <label>Devise</label>
+        <select id="currency">
+            <option value="XOF" selected>XOF</option>
+            <option value="XAF">XAF</option>
+        </select>
+        <label>Canal de paiement</label>
+        <select id="channels">
+            <option value="ALL" selected>Tous (ALL)</option>
+            <option value="MOBILE_MONEY">Mobile Money</option>
+            <option value="CREDIT_CARD">Carte bancaire</option>
+            <option value="WALLET">Wallet</option>
+        </select>
+        <label>Description</label>
+        <input type="text" id="description" value="Test paiement DigitPosts" placeholder="Description">
+    </div>
+
+    <div class="card">
+        <h2 style="margin: 0 0 16px 0; font-size: 1rem;">Client (test)</h2>
+        <div class="row">
+            <div><label>Prénom</label><input type="text" id="customer_name" value="Test"></div>
+            <div><label>Nom</label><input type="text" id="customer_surname" value="Client"></div>
+        </div>
+        <label>Email</label>
+        <input type="email" id="customer_email" value="test@example.com" placeholder="email@example.com">
+        <label>Téléphone (format international, ex. +22670000000)</label>
+        <input type="tel" id="customer_phone_number" value="+22670000000" placeholder="+22670000000">
+        <label>Adresse</label>
+        <input type="text" id="customer_address" value="Ouagadougou" placeholder="Adresse">
+        <label>Ville</label>
+        <input type="text" id="customer_city" value="Ouagadougou">
+        <label>État / Région (code ISO 2)</label>
+        <input type="text" id="customer_state" value="BF" maxlength="2">
+        <label>Code postal (5 caractères si possible)</label>
+        <input type="text" id="customer_zip_code" value="00000" maxlength="10">
+        <label>Pays (code ISO 2)</label>
+        <input type="text" id="customer_country" value="BF" maxlength="2">
+    </div>
+
+    <div class="card">
+        <button type="button" id="btnPay">Ouvrir le guichet de paiement</button>
+    </div>
+
+    <div class="card">
+        <label>Log (réponses CinetPay)</label>
+        <div id="log">En attente...</div>
+    </div>
+
+    <script src="https://cdn.cinetpay.com/seamless/main.js" type="text/javascript"></script>
+    <script>
+        (function() {
+            var logEl = document.getElementById('log');
+            var btnPay = document.getElementById('btnPay');
+
+            function log(msg, isError) {
+                var line = (new Date().toLocaleTimeString()) + ' ' + (typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg);
+                logEl.textContent = line + '\n' + logEl.textContent;
+            }
+
+            function toast(message, type) {
+                var el = document.createElement('div');
+                el.className = 'toast ' + (type || 'success');
+                el.textContent = message;
+                document.body.appendChild(el);
+                setTimeout(function() { el.remove(); }, 5000);
+            }
+
+            function get(id) {
+                var el = document.getElementById(id);
+                return el && el.value != null ? String(el.value).trim() : '';
+            }
+
+            // Générer un transaction_id par défaut au chargement
+            var tid = document.getElementById('transaction_id');
+            if (!tid.value) tid.value = 'TXN' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+
+            btnPay.addEventListener('click', function() {
+                var apikey = get('apikey');
+                var site_id = get('site_id');
+                var notify_url = get('notify_url');
+                if (!apikey || !site_id) {
+                    toast('Veuillez renseigner API Key et Site ID.', 'error');
+                    return;
+                }
+                if (!notify_url) {
+                    toast('Renseignez une Notify URL (ex: https://xxx.ngrok.io/payments/notify).', 'error');
+                    return;
+                }
+
+                var amount = parseInt(get('amount'), 10) || 500;
+                if (amount < 100) {
+                    toast('Montant minimum 100 XOF.', 'error');
+                    return;
+                }
+                if (amount % 5 !== 0) amount = Math.ceil(amount / 5) * 5;
+
+                if (typeof CinetPay === 'undefined') {
+                    toast('Le script CinetPay ne s\'est pas chargé. Vérifiez la console.', 'error');
+                    log('CinetPay non défini');
+                    return;
+                }
+
+                btnPay.disabled = true;
+                log('Ouverture du guichet...');
+
+                // Comme dans l’app : uniquement apikey, site_id, notify_url, close_after_response
+                CinetPay.setConfig({
+                    apikey: apikey,
+                    site_id: site_id,
+                    notify_url: notify_url,
+                    close_after_response: true
+                });
+
+                var desc = (get('description') || 'Test paiement').replace(/[#\/\$_&]/g, ' ');
+                CinetPay.getCheckout({
+                    transaction_id: get('transaction_id'),
+                    amount: amount,
+                    currency: get('currency') || 'XOF',
+                    channels: get('channels') || 'ALL',
+                    description: desc,
+                    customer_name: get('customer_name') || 'Client',
+                    customer_surname: get('customer_surname') || '',
+                    customer_email: get('customer_email') || 'test@example.com',
+                    customer_phone_number: get('customer_phone_number') || '+22670000000',
+                    customer_address: get('customer_address') || 'Ouagadougou',
+                    customer_city: get('customer_city') || 'Ouagadougou',
+                    customer_country: get('customer_country') || 'BF',
+                    customer_state: get('customer_state') || 'BF',
+                    customer_zip_code: get('customer_zip_code') || '00000'
+                });
+
+                CinetPay.waitResponse(function(res) {
+                    log(res);
+                    if (res.status === 'ACCEPTED') {
+                        toast('Paiement accepté (test).', 'success');
+                    } else if (res.status === 'REFUSED') {
+                        toast('Paiement refusé.', 'error');
+                    }
+                    btnPay.disabled = false;
+                });
+
+                CinetPay.onClose(function(res) {
+                    log('onClose: ' + JSON.stringify(res));
+                    if (res && res.status === 'ACCEPTED') {
+                        toast('Paiement accepté.', 'success');
+                    } else if (res && res.status === 'REFUSED') {
+                        toast('Paiement refusé.', 'error');
+                    } else {
+                        toast('Fenêtre fermée.', 'error');
+                    }
+                    btnPay.disabled = false;
+                });
+
+                CinetPay.onError(function(err) {
+                    log('onError: ' + JSON.stringify(err));
+                    toast('Erreur CinetPay: ' + (err && err.message ? err.message : 'voir log'), 'error');
+                    btnPay.disabled = false;
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -108,11 +108,16 @@ class Subscription extends Model
      */
     public function markAsPaid($transactionId, $paymentDetails = null): void
     {
+        $details = $this->payment_details ?? [];
+        if (is_array($paymentDetails)) {
+            $details['payment_confirmation'] = $paymentDetails;
+        }
+
         $this->update([
             'payment_status' => 'paid',
             'payment_transaction_id' => $transactionId,
             'payment_date' => now(),
-            'payment_details' => $paymentDetails,
+            'payment_details' => $details,
             'status' => 'active',
         ]);
     }

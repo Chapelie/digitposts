@@ -8,7 +8,6 @@ use App\Services\CinetPayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class SubscriptionController extends Controller
 {
@@ -70,9 +69,9 @@ class SubscriptionController extends Controller
                 ->where('user_id', $user->id)
                 ->first();
             
-            if ($subscription && $subscription->payment_transaction_id) {
-                // Vérifier le statut via CinetPay
-                $checkResponse = $this->cinetPayService->checkPaymentStatus($subscription->payment_transaction_id);
+            $pt = $subscription->payment_details['payment_token'] ?? null;
+            if ($subscription && $pt) {
+                $checkResponse = $this->cinetPayService->checkPaymentStatus($pt);
                 
                 if ($checkResponse['success'] && isset($checkResponse['data']['status'])) {
                     $status = strtoupper($checkResponse['data']['status'] ?? '');
@@ -134,50 +133,56 @@ class SubscriptionController extends Controller
                 ], 400);
             }
 
-            $transactionId = 'SUB' . time() . Str::random(8);
+            $merchantId = 'S' . substr(str_replace('-', '', $subscription->id), 0, 18) . substr((string) time(), -8);
+            $merchantId = substr(preg_replace('/[^a-zA-Z0-9]/', '', $merchantId), 0, 30);
+
             $description = $subscription->plan_type === SubscriptionPlan::TYPE_FREE_EVENTS
-                ? 'Abonnement - Accès aux événements gratuits'
-                : 'Abonnement - Droit de créer des activités';
+                ? 'Abonnement acces evenements gratuits'
+                : 'Abonnement creation activites';
 
             $baseUrl = rtrim(config('cinetpay.payment_base_url') ?? config('app.url'), '/');
+            $successUrl = $baseUrl . '/' . ltrim(route('subscriptions.return', $subscription->id, false), '/');
+            $failedUrl = $baseUrl . '/' . ltrim(route('subscriptions.checkout', ['plan' => $subscription->plan_type, 'failed' => '1'], false), '/');
+
             $paymentData = [
-                'transaction_id' => $transactionId,
+                'transaction_id' => $merchantId,
                 'amount' => (int) round((float) $subscription->amount),
                 'currency' => 'XOF',
                 'description' => $description,
-                'subscription_id' => $subscription->id,
-                'return_url' => $baseUrl . '/' . ltrim(route('subscriptions.return', $subscription->id, false), '/'),
+                'success_url' => $successUrl,
+                'failed_url' => $failedUrl,
                 'notify_url' => $baseUrl . '/' . ltrim(route('subscriptions.notify', [], false), '/'),
-                'customer_name' => Auth::user()->firstname,
-                'customer_surname' => Auth::user()->lastname,
+                'customer_name' => Auth::user()->firstname ?? 'Client',
+                'customer_surname' => Auth::user()->lastname ?? 'User',
                 'customer_email' => Auth::user()->email,
                 'customer_phone_number' => Auth::user()->phone ?? null,
-                'customer_address' => Auth::user()->location ?? 'Non renseigné',
-                'customer_city' => 'Ouagadougou',
-                'customer_country' => 'BF',
-                'customer_state' => 'BF',
-                'customer_zip_code' => null,
+                'payment_method' => $request->input('payment_method'),
             ];
 
             $paymentResponse = $this->cinetPayService->createPayment($paymentData);
 
-            if (!$paymentResponse['success']) {
+            if (! $paymentResponse['success']) {
                 return response()->json([
                     'success' => false,
-                    'message' => $paymentResponse['message'] ?? 'Erreur lors de la création du paiement.'
+                    'message' => $paymentResponse['message'] ?? 'Erreur lors de la création du paiement.',
                 ], 400);
             }
 
             $subscription->update([
-                'payment_transaction_id' => $transactionId,
-                'payment_url' => $paymentResponse['data']['payment_url'] ?? null,
-                'payment_details' => $paymentResponse['data'] ?? null,
+                'payment_transaction_id' => $paymentResponse['merchant_transaction_id'] ?? $merchantId,
+                'payment_url' => $paymentResponse['payment_url'],
+                'payment_details' => array_merge($subscription->payment_details ?? [], [
+                    'payment_token' => $paymentResponse['payment_token'],
+                    'notify_token' => $paymentResponse['notify_token'],
+                    'cinetpay_transaction_id' => $paymentResponse['cinetpay_transaction_id'],
+                    'init' => $paymentResponse['data'] ?? [],
+                ]),
             ]);
 
             return response()->json([
                 'success' => true,
-                'payment_url' => $paymentResponse['data']['payment_url'] ?? null,
-                'message' => 'Paiement initialisé avec succès.'
+                'payment_url' => $paymentResponse['payment_url'],
+                'message' => 'Paiement initialisé avec succès.',
             ]);
 
         } catch (\Exception $e) {
@@ -209,12 +214,13 @@ class SubscriptionController extends Controller
                 return redirect($url)->with('success', $msg);
             }
 
-            if ($subscription->payment_transaction_id) {
-                $checkResponse = $this->cinetPayService->checkPaymentStatus($subscription->payment_transaction_id);
+            $pt = $subscription->payment_details['payment_token'] ?? null;
+            if ($pt) {
+                $checkResponse = $this->cinetPayService->checkPaymentStatus($pt);
 
                 if ($checkResponse['success'] && isset($checkResponse['data']['status'])) {
                     $status = strtoupper($checkResponse['data']['status'] ?? '');
-                    
+
                     if ($status === 'ACCEPTED') {
                         // Recharger l'abonnement depuis la base pour éviter les conflits
                         $subscription->refresh();
@@ -269,89 +275,53 @@ class SubscriptionController extends Controller
     public function handleNotification(Request $request)
     {
         try {
-            Log::info('Notification webhook abonnement reçue', $request->all());
+            $payload = $request->json()->all() ?: $request->all();
+            Log::info('Notification abonnement CinetPay', $payload);
 
-            // Récupérer le token HMAC depuis l'en-tête x-token (si présent)
-            $receivedToken = $request->header('x-token');
-            
-            if ($receivedToken) {
-                // Vérifier le token HMAC si présent
-                $isValidToken = app(CinetPayService::class)->verifyHmacToken($request->all(), $receivedToken);
-                
-                if (!$isValidToken) {
-                    Log::error('Token HMAC invalide - Notification abonnement rejetée', [
-                        'transaction_id' => $request->input('cpm_trans_id'),
-                        'ip' => $request->ip()
-                    ]);
-                    return response()->json(['success' => false, 'message' => 'Token HMAC invalide'], 403);
+            if ($request->isJson() || $request->has('notify_token') || $request->has('merchant_transaction_id')) {
+                $notifyToken = $payload['notify_token'] ?? null;
+                $merchantId = $payload['merchant_transaction_id'] ?? null;
+                if (! $merchantId) {
+                    return response()->json(['error' => 'merchant_transaction_id manquant'], 400);
                 }
-            }
 
-            $request->validate([
-                'cpm_trans_id' => 'required|string',
-            ]);
+                $subscription = Subscription::where('payment_transaction_id', $merchantId)->first();
+                if (! $subscription) {
+                    return response()->json(['error' => 'not_found'], 404);
+                }
+                if ($subscription->payment_status === 'paid') {
+                    return response()->json(['ok' => true]);
+                }
 
-            $transactionId = $request->cpm_trans_id;
-            
-            // Chercher l'abonnement par transaction_id
-            $subscription = Subscription::where('payment_transaction_id', $transactionId)
-                ->first();
+                $stored = $subscription->payment_details['notify_token'] ?? null;
+                if ($stored && $notifyToken && ! $this->cinetPayService->verifyNotifyToken($notifyToken, $stored)) {
+                    return response()->json(['error' => 'invalid_notify_token'], 403);
+                }
 
-            if (!$subscription) {
-                Log::warning('Abonnement non trouvé pour la transaction: ' . $transactionId);
-                return response()->json(['success' => false, 'message' => 'Abonnement non trouvé'], 404);
-            }
+                $pt = $subscription->payment_details['payment_token'] ?? null;
+                if (! $pt) {
+                    return response()->json(['error' => 'no_payment_token'], 400);
+                }
 
-            // Si déjà payé, retourner OK pour éviter les doublons
-            if ($subscription->payment_status === 'paid') {
-                Log::info('Abonnement déjà payé', [
-                    'subscription_id' => $subscription->id,
-                    'transaction_id' => $transactionId
-                ]);
-                return response()->json(['success' => true, 'message' => 'Abonnement déjà activé']);
-            }
-
-            // Vérifier le statut du paiement
-            $checkResponse = $this->cinetPayService->checkPaymentStatus($transactionId);
-
-            if ($checkResponse['success'] && isset($checkResponse['data']['status'])) {
-                $status = strtoupper($checkResponse['data']['status'] ?? '');
-                
-                if ($status === 'ACCEPTED') {
-                    // Recharger l'abonnement pour éviter les conflits
+                $checkResponse = $this->cinetPayService->checkPaymentStatus($pt);
+                if ($checkResponse['success'] && ($checkResponse['data']['status'] ?? '') === 'ACCEPTED') {
                     $subscription->refresh();
-                    
-                    // Vérifier à nouveau avant de mettre à jour
                     if ($subscription->payment_status !== 'paid') {
                         $subscription->markAsPaid(
-                            $transactionId,
+                            $subscription->payment_transaction_id,
                             $checkResponse['data']
                         );
-
-                        Log::info('Abonnement marqué comme payé via webhook', [
-                            'subscription_id' => $subscription->id,
-                            'user_id' => $subscription->user_id,
-                            'transaction_id' => $transactionId,
-                            'amount' => $checkResponse['data']['amount'] ?? null,
-                        ]);
                     }
-
-                    return response()->json(['success' => true, 'message' => 'Abonnement activé']);
-                } else {
-                    Log::info('Paiement non accepté pour abonnement', [
-                        'subscription_id' => $subscription->id,
-                        'status' => $status
-                    ]);
                 }
+
+                return response()->json(['ok' => true]);
             }
 
-            return response()->json(['success' => false, 'message' => 'Paiement non confirmé']);
-
+            return response()->json(['ok' => true]);
         } catch (\Exception $e) {
-            Log::error('Erreur lors du traitement de la notification d\'abonnement: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json(['success' => false, 'message' => 'Erreur serveur'], 500);
+            Log::error('Notification abonnement: ' . $e->getMessage());
+
+            return response()->json(['error' => 'server'], 500);
         }
     }
 }

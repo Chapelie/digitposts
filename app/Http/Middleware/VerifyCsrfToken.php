@@ -12,6 +12,7 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        'payments/notify', // Webhook CinetPay - pas de CSRF nécessaire
+        'payments/notify',
+        'subscriptions/notify',
     ];
 }

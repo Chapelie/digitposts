@@ -11,6 +11,12 @@
             <p class="text-lg text-gray-600">Paiement sécurisé</p>
         </div>
 
+        @if(request('payment') === 'failed')
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-center">
+            <p class="text-amber-800 font-medium">Paiement annulé ou refusé. Vous pouvez réessayer.</p>
+        </div>
+        @endif
+
         <!-- Détails de la formation -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <div class="flex items-start space-x-4">
@@ -184,7 +190,7 @@
                     <span>Payer {{ $registration->feed->feedable->formatted_price }}</span>
                 </button>
                 <p class="text-sm text-gray-500 mt-3">Paiement sécurisé et crypté</p>
-                <p class="text-xs text-gray-400 mt-2">Le guichet CinetPay s'ouvrira pour finaliser le paiement</p>
+                <p class="text-xs text-gray-400 mt-2">Vous serez redirigé vers la plateforme de paiement CinetPay</p>
             </div>
         </div>
         @endif
@@ -241,21 +247,7 @@
 }
 </style>
 
-@section('head')
-<script src="https://cdn.cinetpay.com/seamless/main.js" type="text/javascript"></script>
-@endsection
-
-@php
-    $cinetpayBase = rtrim(config('cinetpay.payment_base_url') ?? config('app.url'), '/');
-    $cinetpayNotifyUrl = $cinetpayBase . '/' . ltrim(route('payments.notify', [], false), '/');
-@endphp
 <script>
-window.cinetpayConfig = {
-    apikey: @json(config('cinetpay.api_key')),
-    site_id: @json(config('cinetpay.site_id')),
-    notify_url: @json($cinetpayNotifyUrl)
-};
-
 document.addEventListener('DOMContentLoaded', function() {
     const methodCards = document.querySelectorAll('.payment-method-card');
     methodCards.forEach(card => {
@@ -283,7 +275,7 @@ function initiatePayment() {
 
     const payButton = document.getElementById('payButton');
     payButton.disabled = true;
-    payButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Initialisation...';
+    payButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Redirection...';
 
     const payload = {
         registration_id: '{{ $registration->id }}',
@@ -298,67 +290,16 @@ function initiatePayment() {
     })
     .then(r => r.json())
     .then(data => {
-        if (!data.success) {
+        if (!data.success || !data.payment_url) {
             showNotification('error', data.message || 'Erreur lors de l\'initialisation.');
             resetPayButton();
             return;
         }
-        const cfg = window.cinetpayConfig;
-        if (!cfg || !cfg.apikey || !cfg.site_id) {
-            showNotification('error', 'Configuration CinetPay manquante.');
-            resetPayButton();
-            return;
-        }
-        CinetPay.setConfig({
-            apikey: cfg.apikey,
-            site_id: cfg.site_id,
-            notify_url: cfg.notify_url,
-            close_after_response: true
-        });
-        CinetPay.getCheckout({
-            transaction_id: data.transaction_id,
-            amount: data.amount,
-            currency: data.currency,
-            channels: data.channels,
-            description: data.description,
-            customer_name: data.customer_name,
-            customer_surname: data.customer_surname,
-            customer_email: data.customer_email,
-            customer_phone_number: data.customer_phone_number || '',
-            customer_address: data.customer_address,
-            customer_city: data.customer_city,
-            customer_country: data.customer_country,
-            customer_state: data.customer_state,
-            customer_zip_code: data.customer_zip_code || ''
-        });
-        CinetPay.waitResponse(function(res) {
-            if (res.status === 'REFUSED') {
-                showNotification('error', 'Votre paiement a échoué.');
-                resetPayButton();
-            } else if (res.status === 'ACCEPTED') {
-                showNotification('success', 'Paiement effectué avec succès !');
-                setTimeout(function() { window.location.href = '{{ route("payments.after-success") }}'; }, 1500);
-            }
-        });
-        CinetPay.onClose(function(res) {
-            if (res && res.status === 'REFUSED') {
-                showNotification('error', 'Votre paiement a échoué.');
-            } else if (res && res.status === 'ACCEPTED') {
-                showNotification('success', 'Paiement effectué avec succès !');
-                setTimeout(function() { window.location.href = '{{ route("payments.after-success") }}'; }, 1500);
-                return;
-            }
-            resetPayButton();
-        });
-        CinetPay.onError(function(err) {
-            console.error('CinetPay error', err);
-            showNotification('error', 'Erreur du guichet de paiement.');
-            resetPayButton();
-        });
+        window.location.href = data.payment_url;
     })
     .catch(function(err) {
         console.error(err);
-        showNotification('error', 'Erreur lors de l\'initialisation. Veuillez réessayer.');
+        showNotification('error', 'Erreur réseau. Réessayez.');
         resetPayButton();
     });
 }

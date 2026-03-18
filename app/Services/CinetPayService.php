@@ -2,327 +2,356 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
+/**
+ * CinetPay API v1 : OAuth + POST /v1/payment + GET /v1/payment/{token}
+ *
+ * @see https://api.cinetpay.net (sandbox)
+ */
 class CinetPayService
 {
-    protected $apiKey;
-    protected $siteId;
-    protected $secretKey;
-    protected $apiUrl;
-    protected $checkUrl;
+    protected string $baseUrl;
+
+    protected string $apiKey;
+
+    protected string $apiPassword;
 
     public function __construct()
     {
-        $this->apiKey = config('cinetpay.api_key');
-        $this->siteId = config('cinetpay.site_id');
-        $this->secretKey = config('cinetpay.secret_key');
-        $this->apiUrl = config('cinetpay.api_url', 'https://api-checkout.cinetpay.com/v2/payment');
-        $this->checkUrl = config('cinetpay.check_url', 'https://api-checkout.cinetpay.com/v2/payment/check');
-        
-        if (empty($this->apiKey) || empty($this->siteId)) {
-            throw new \Exception('CinetPay API Key et Site ID doivent être configurés dans le fichier .env');
+        $this->baseUrl = config('cinetpay.base_url', 'https://api.cinetpay.net');
+        $this->apiKey = (string) config('cinetpay.api_key', '');
+        $this->apiPassword = (string) config('cinetpay.api_password', '');
+    }
+
+    protected function ensureCredentials(): void
+    {
+        if ($this->apiKey === '' || $this->apiPassword === '') {
+            throw new \RuntimeException(
+                'CinetPay API v1 : définissez CINETPAY_API_KEY et CINETPAY_API_PASSWORD dans .env.'
+            );
         }
     }
 
     /**
-     * Créer un paiement CinetPay
+     * Jeton Bearer (mis en cache jusqu’à expiration).
      */
-    public function createPayment($data)
+    public function getAccessToken(bool $forceRefresh = false): string
+    {
+        $this->ensureCredentials();
+
+        if ($forceRefresh) {
+            Cache::forget('cinetpay_v1_access_token');
+        }
+
+        $cached = Cache::get('cinetpay_v1_access_token');
+        if (is_string($cached) && $cached !== '') {
+            return $cached;
+        }
+
+        $response = Http::asJson()
+            ->timeout(30)
+            ->post($this->baseUrl . '/v1/oauth/login', [
+                'api_key' => $this->apiKey,
+                'api_password' => $this->apiPassword,
+            ]);
+
+        $body = $response->json() ?? [];
+
+        if (!$response->successful() || (int) ($body['code'] ?? 0) !== 200) {
+            Log::error('CinetPay OAuth échec', ['body' => $body, 'status' => $response->status()]);
+            throw new \RuntimeException($body['message'] ?? 'Échec authentification CinetPay (OAuth).');
+        }
+
+        $token = $body['access_token'] ?? '';
+        if ($token === '') {
+            throw new \RuntimeException('CinetPay : access_token manquant.');
+        }
+
+        $ttl = max(60, (int) ($body['expires_in'] ?? 3600) - 120);
+        Cache::put('cinetpay_v1_access_token', $token, $ttl);
+
+        return $token;
+    }
+
+    /**
+     * Initialise un paiement web → payment_url (redirection client).
+     */
+    public function createPayment(array $data): array
     {
         try {
-            Log::info('Création de paiement CinetPay', $data);
+            $merchantId = $this->normalizeMerchantTransactionId(
+                $data['transaction_id'] ?? $data['merchant_transaction_id'] ?? null
+            );
 
-            // Générer un transaction_id unique si non fourni
-            $transactionId = $data['transaction_id'] ?? 'TXN' . time() . Str::random(8);
-
-            // Préparer les données selon le format CinetPay
-            // CinetPay exige que le montant soit un multiple de 5 (sauf pour USD)
             $amount = (int) $data['amount'];
-            $currency = $data['currency'] ?? 'XOF';
-            
-            // Arrondir au multiple de 5 supérieur si nécessaire (sauf pour USD)
+            $currency = strtoupper($data['currency'] ?? 'XOF');
             if ($currency !== 'USD' && $amount % 5 !== 0) {
                 $amount = (int) ceil($amount / 5) * 5;
-                Log::info('Montant arrondi au multiple de 5', [
-                    'montant_original' => $data['amount'],
-                    'montant_arrondi' => $amount
-                ]);
             }
-            
-            $paymentData = [
-                'apikey' => $this->apiKey,
-                'site_id' => $this->siteId,
-                'transaction_id' => $transactionId,
-                'amount' => $amount,
+
+            $first = $this->clientName($data['customer_name'] ?? $data['client_first_name'] ?? 'Client', true);
+            $last = $this->clientName($data['customer_surname'] ?? $data['client_last_name'] ?? 'Utilisateur', false);
+
+            $successUrl = $this->truncateUrl($data['success_url'] ?? $data['return_url'] ?? url('/'));
+            $failedUrl = $this->truncateUrl($data['failed_url'] ?? $data['cancel_url'] ?? $successUrl);
+            $notifyUrl = $this->truncateUrl($data['notify_url'] ?? url('/payments/notify'));
+
+            $lang = $data['lang'] ?? 'fr';
+            if (! in_array($lang, ['fr', 'en'], true)) {
+                $lang = 'fr';
+            }
+
+            $payload = [
                 'currency' => $currency,
-                'description' => $data['description'] ?? 'Paiement',
-                'notify_url' => $data['notify_url'] ?? route('payments.notify'),
-                'return_url' => $data['return_url'] ?? route('payments.return', $data['registration_id'] ?? ''),
-                'channels' => $data['channels'] ?? 'ALL', // ALL, MOBILE_MONEY, CREDIT_CARD, WALLET
-                'lang' => $data['lang'] ?? 'fr',
+                'merchant_transaction_id' => $merchantId,
+                'amount' => $amount,
+                'lang' => $lang,
+                'designation' => $this->sanitizeDesignation($data['description'] ?? $data['designation'] ?? 'Paiement'),
+                'client_email' => $data['customer_email'] ?? $data['client_email'] ?? 'client@example.com',
+                'client_first_name' => $first,
+                'client_last_name' => $last,
+                'success_url' => $successUrl,
+                'failed_url' => $failedUrl,
+                'notify_url' => $notifyUrl,
+                'direct_pay' => (bool) ($data['direct_pay'] ?? false),
             ];
 
-            // Ajouter les métadonnées si présentes
-            if (isset($data['metadata'])) {
-                if (is_string($data['metadata'])) {
-                    $paymentData['metadata'] = $data['metadata'];
-                } elseif (is_array($data['metadata'])) {
-                    $paymentData['metadata'] = json_encode($data['metadata']);
-                }
+            $phone = $data['customer_phone_number'] ?? $data['client_phone_number'] ?? null;
+            if ($phone !== null && $phone !== '') {
+                $payload['client_phone_number'] = $this->normalizePhone((string) $phone);
             }
 
-            // Ajouter les informations client pour le paiement par carte bancaire
-            if (isset($data['customer_name'])) {
-                $paymentData['customer_name'] = $data['customer_name'];
-            }
-            if (isset($data['customer_surname'])) {
-                $paymentData['customer_surname'] = $data['customer_surname'];
-            }
-            if (isset($data['customer_email'])) {
-                $paymentData['customer_email'] = $data['customer_email'];
-            }
-            if (isset($data['customer_phone_number'])) {
-                $paymentData['customer_phone_number'] = $data['customer_phone_number'];
-            }
-            if (isset($data['customer_address'])) {
-                $paymentData['customer_address'] = $data['customer_address'];
-            }
-            if (isset($data['customer_city'])) {
-                $paymentData['customer_city'] = $data['customer_city'];
-            }
-            if (isset($data['customer_country'])) {
-                $paymentData['customer_country'] = $data['customer_country'];
-            }
-            if (isset($data['customer_state'])) {
-                $paymentData['customer_state'] = $data['customer_state'];
-            }
-            if (isset($data['customer_zip_code'])) {
-                $paymentData['customer_zip_code'] = $data['customer_zip_code'];
+            $pm = $data['payment_method'] ?? $data['channels'] ?? null;
+            if ($pm && $pm !== 'ALL' && ! in_array($pm, ['MOBILE_MONEY', 'CREDIT_CARD', 'WALLET'], true)) {
+                $payload['payment_method'] = $pm;
+            } elseif ($pm === 'MOBILE_MONEY') {
+                // Laisser vide = toutes les méthodes mobile du pays
             }
 
-            // Ajouter invoice_data si présent
-            if (isset($data['invoice_data']) && is_array($data['invoice_data'])) {
-                $paymentData['invoice_data'] = $data['invoice_data'];
+            if (! empty($data['otp_code'])) {
+                $payload['otp_code'] = $data['otp_code'];
             }
 
-            // Appel à l'API CinetPay
-            $response = Http::asJson()
-                ->timeout(30)
-                ->post($this->apiUrl, $paymentData);
+            Log::info('CinetPay v1 /payment', ['merchant_transaction_id' => $merchantId, 'amount' => $amount]);
 
-            $responseData = $response->json();
+            $token = $this->getAccessToken();
+            $response = Http::withToken($token)
+                ->asJson()
+                ->acceptJson()
+                ->timeout(45)
+                ->post($this->baseUrl . '/v1/payment', $payload);
 
-            if ($response->successful() && isset($responseData['code']) && $responseData['code'] === '201') {
-                Log::info('Paiement CinetPay créé avec succès', [
-                    'transaction_id' => $transactionId,
-                    'payment_url' => $responseData['data']['payment_url'] ?? null
-                ]);
+            if ($response->status() === 401) {
+                $token = $this->getAccessToken(true);
+                $response = Http::withToken($token)
+                    ->asJson()
+                    ->acceptJson()
+                    ->timeout(45)
+                    ->post($this->baseUrl . '/v1/payment', $payload);
+            }
 
-                return [
-                    'success' => true,
-                    'payment_url' => $responseData['data']['payment_url'] ?? null,
-                    'payment_token' => $responseData['data']['payment_token'] ?? null,
-                    'transaction_id' => $transactionId,
-                    'data' => $responseData['data'] ?? []
-                ];
-            } else {
-                $errorMessage = $responseData['message'] ?? 'Erreur lors de la création du paiement';
-                Log::error('Erreur CinetPay - Création de paiement', [
-                    'error' => $errorMessage,
-                    'code' => $responseData['code'] ?? null,
-                    'response' => $responseData
-                ]);
+            $body = $response->json() ?? [];
+
+            if (! $response->successful() || (int) ($body['code'] ?? 0) !== 200) {
+                $msg = $body['message'] ?? $body['description'] ?? 'Erreur initialisation paiement';
+                Log::error('CinetPay v1 payment erreur', ['body' => $body]);
 
                 return [
                     'success' => false,
-                    'message' => 'Erreur CinetPay: ' . $errorMessage,
-                    'code' => $responseData['code'] ?? null
+                    'message' => is_string($msg) ? $msg : json_encode($msg),
+                    'code' => $body['code'] ?? null,
                 ];
             }
 
-        } catch (\Exception $e) {
-            Log::error('Exception lors de la création du paiement CinetPay', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
+            $paymentUrl = $body['payment_url'] ?? '';
+            if ($paymentUrl === '') {
+                return ['success' => false, 'message' => 'payment_url manquant dans la réponse CinetPay.'];
+            }
+
             return [
-                'success' => false,
-                'message' => 'Erreur technique: ' . $e->getMessage()
+                'success' => true,
+                'payment_url' => $paymentUrl,
+                'payment_token' => $body['payment_token'] ?? null,
+                'notify_token' => $body['notify_token'] ?? null,
+                'cinetpay_transaction_id' => $body['transaction_id'] ?? null,
+                'merchant_transaction_id' => $body['merchant_transaction_id'] ?? $merchantId,
+                'transaction_id' => $merchantId,
+                'data' => $body,
             ];
+        } catch (\Throwable $e) {
+            Log::error('CinetPay createPayment exception', ['e' => $e->getMessage()]);
+
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
     /**
-     * Vérifier le statut d'un paiement
+     * Statut d’un paiement (payment_token retourné à l’init).
      */
-    public function checkPaymentStatus($transactionId)
+    public function checkPaymentStatus(string $paymentToken): array
     {
+        if ($paymentToken === '') {
+            return ['success' => false, 'message' => 'payment_token vide'];
+        }
+
         try {
-            Log::info('Vérification du statut de paiement CinetPay', [
-                'transaction_id' => $transactionId
-            ]);
-
-            $checkData = [
-                'apikey' => $this->apiKey,
-                'site_id' => $this->siteId,
-                'transaction_id' => $transactionId,
-            ];
-
-            $response = Http::asJson()
+            $token = $this->getAccessToken();
+            $response = Http::withToken($token)
+                ->acceptJson()
                 ->timeout(30)
-                ->post($this->checkUrl, $checkData);
+                ->get($this->baseUrl . '/v1/payment/' . rawurlencode($paymentToken));
 
-            $responseData = $response->json();
+            if ($response->status() === 401) {
+                $token = $this->getAccessToken(true);
+                $response = Http::withToken($token)
+                    ->acceptJson()
+                    ->timeout(30)
+                    ->get($this->baseUrl . '/v1/payment/' . rawurlencode($paymentToken));
+            }
 
-            if ($response->successful() && isset($responseData['code']) && $responseData['code'] === '00') {
-                $data = $responseData['data'] ?? [];
-                
-                Log::info('Statut de paiement CinetPay vérifié', [
-                    'transaction_id' => $transactionId,
-                    'status' => $data['status'] ?? null
-                ]);
+            $body = $response->json() ?? [];
+            $code = (int) ($body['code'] ?? 0);
+            $status = strtoupper((string) ($body['status'] ?? ''));
 
+            if ($code === 100 && $status === 'SUCCESS') {
                 return [
                     'success' => true,
                     'data' => [
-                        'transaction_id' => $transactionId,
-                        'status' => $data['status'] ?? 'UNKNOWN', // ACCEPTED, REFUSED, PENDING
-                        'amount' => (int) ($data['amount'] ?? 0), // Convertir en entier
-                        'currency' => $data['currency'] ?? 'XOF',
-                        'payment_method' => $data['payment_method'] ?? null,
-                        'payment_date' => $data['payment_date'] ?? null,
-                        'operator_id' => $data['operator_id'] ?? null,
-                        'description' => $data['description'] ?? '',
-                        'metadata' => $data['metadata'] ?? null,
-                        'fund_availability_date' => $data['fund_availability_date'] ?? null,
-                    ]
-                ];
-            } else {
-                $errorMessage = $responseData['message'] ?? 'Erreur lors de la vérification';
-                Log::error('Erreur CinetPay - Vérification', [
-                    'error' => $errorMessage,
-                    'code' => $responseData['code'] ?? null
-                ]);
-
-                return [
-                    'success' => false,
-                    'message' => 'Erreur lors de la vérification: ' . $errorMessage,
-                    'code' => $responseData['code'] ?? null
+                        'status' => 'ACCEPTED',
+                        'amount' => 0,
+                        'currency' => 'XOF',
+                        'payment_method' => null,
+                        'payment_date' => now()->toDateTimeString(),
+                        'transaction_id' => $body['merchant_transaction_id'] ?? null,
+                        'cinetpay_transaction_id' => $body['transaction_id'] ?? null,
+                        'user' => $body['user'] ?? null,
+                        'raw' => $body,
+                    ],
                 ];
             }
 
-        } catch (\Exception $e) {
-            Log::error('Exception lors de la vérification du statut CinetPay', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
             return [
                 'success' => false,
-                'message' => 'Erreur technique: ' . $e->getMessage()
+                'message' => $body['message'] ?? 'Paiement non confirmé',
+                'data' => [
+                    'status' => $status !== '' ? $status : 'UNKNOWN',
+                    'raw' => $body,
+                ],
             ];
+        } catch (\Throwable $e) {
+            Log::error('CinetPay checkPaymentStatus', ['e' => $e->getMessage()]);
+
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
     /**
-     * Vérifier le token HMAC d'une notification CinetPay
-     * 
-     * @param array $requestData Les données de la requête POST
-     * @param string $receivedToken Le token reçu dans l'en-tête x-token
-     * @return bool
+     * Vérifie le notify_token reçu sur le webhook v1.
      */
-    public function verifyHmacToken($requestData, $receivedToken)
+    public function verifyNotifyToken(?string $received, ?string $stored): bool
     {
-        try {
-            if (empty($this->secretKey)) {
-                Log::warning('Secret Key CinetPay non configurée, impossible de vérifier le token HMAC');
-                return false;
-            }
-
-            // Récupérer tous les champs nécessaires pour la génération du token
-            $cpm_site_id = $requestData['cpm_site_id'] ?? '';
-            $cpm_trans_id = $requestData['cpm_trans_id'] ?? '';
-            $cpm_trans_date = $requestData['cpm_trans_date'] ?? '';
-            $cpm_amount = $requestData['cpm_amount'] ?? '';
-            $cpm_currency = $requestData['cpm_currency'] ?? '';
-            $signature = $requestData['signature'] ?? '';
-            $payment_method = $requestData['payment_method'] ?? '';
-            $cel_phone_num = $requestData['cel_phone_num'] ?? '';
-            $cpm_phone_prefixe = $requestData['cpm_phone_prefixe'] ?? '';
-            $cpm_language = $requestData['cpm_language'] ?? '';
-            $cpm_version = $requestData['cpm_version'] ?? '';
-            $cpm_payment_config = $requestData['cpm_payment_config'] ?? '';
-            $cpm_page_action = $requestData['cpm_page_action'] ?? '';
-            $cpm_custom = $requestData['cpm_custom'] ?? '';
-            $cpm_designation = $requestData['cpm_designation'] ?? '';
-            $cpm_error_message = $requestData['cpm_error_message'] ?? '';
-
-            // Concaténer les données selon le schéma CinetPay
-            $data = $cpm_site_id . $cpm_trans_id . $cpm_trans_date . $cpm_amount . $cpm_currency . 
-                    $signature . $payment_method . $cel_phone_num . $cpm_phone_prefixe . 
-                    $cpm_language . $cpm_version . $cpm_payment_config . $cpm_page_action . 
-                    $cpm_custom . $cpm_designation . $cpm_error_message;
-
-            // Générer le token HMAC avec SHA256
-            $generatedToken = hash_hmac('SHA256', $data, $this->secretKey);
-
-            // Comparer les tokens de manière sécurisée (timing-safe)
-            $isValid = hash_equals($receivedToken, $generatedToken);
-
-            if (!$isValid) {
-                Log::warning('Token HMAC invalide', [
-                    'received_token' => substr($receivedToken, 0, 20) . '...',
-                    'generated_token' => substr($generatedToken, 0, 20) . '...',
-                    'transaction_id' => $cpm_trans_id
-                ]);
-            }
-
-            return $isValid;
-
-        } catch (\Exception $e) {
-            Log::error('Erreur lors de la vérification du token HMAC', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+        if ($received === null || $received === '' || $stored === null || $stored === '') {
             return false;
         }
+
+        return hash_equals((string) $stored, (string) $received);
     }
 
     /**
-     * Traiter une notification de paiement
+     * Ancienne vérif HMAC (checkout v2) — conservée pour compatibilité si ancien webhook.
      */
-    public function processNotification($requestData)
+    public function verifyHmacToken(array $requestData, string $receivedToken): bool
     {
-        try {
-            Log::info('Traitement de notification CinetPay', $requestData);
-
-            $transactionId = $requestData['cpm_trans_id'] ?? null;
-            
-            if (!$transactionId) {
-                Log::warning('Notification CinetPay sans transaction ID', $requestData);
-                return [
-                    'success' => false,
-                    'message' => 'Transaction ID manquant'
-                ];
-            }
-
-            // Vérifier le statut via l'API
-            return $this->checkPaymentStatus($transactionId);
-
-        } catch (\Exception $e) {
-            Log::error('Exception lors du traitement de la notification CinetPay', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return [
-                'success' => false,
-                'message' => 'Erreur technique: ' . $e->getMessage()
-            ];
+        $secretKey = config('cinetpay.secret_key');
+        if (empty($secretKey)) {
+            return false;
         }
+
+        $cpm_site_id = $requestData['cpm_site_id'] ?? '';
+        $cpm_trans_id = $requestData['cpm_trans_id'] ?? '';
+        $cpm_trans_date = $requestData['cpm_trans_date'] ?? '';
+        $cpm_amount = $requestData['cpm_amount'] ?? '';
+        $cpm_currency = $requestData['cpm_currency'] ?? '';
+        $signature = $requestData['signature'] ?? '';
+        $payment_method = $requestData['payment_method'] ?? '';
+        $cel_phone_num = $requestData['cel_phone_num'] ?? '';
+        $cpm_phone_prefixe = $requestData['cpm_phone_prefixe'] ?? '';
+        $cpm_language = $requestData['cpm_language'] ?? '';
+        $cpm_version = $requestData['cpm_version'] ?? '';
+        $cpm_payment_config = $requestData['cpm_payment_config'] ?? '';
+        $cpm_page_action = $requestData['cpm_page_action'] ?? '';
+        $cpm_custom = $requestData['cpm_custom'] ?? '';
+        $cpm_designation = $requestData['cpm_designation'] ?? '';
+        $cpm_error_message = $requestData['cpm_error_message'] ?? '';
+
+        $data = $cpm_site_id . $cpm_trans_id . $cpm_trans_date . $cpm_amount . $cpm_currency
+            . $signature . $payment_method . $cel_phone_num . $cpm_phone_prefixe
+            . $cpm_language . $cpm_version . $cpm_payment_config . $cpm_page_action
+            . $cpm_custom . $cpm_designation . $cpm_error_message;
+
+        $generated = hash_hmac('SHA256', $data, $secretKey);
+
+        return hash_equals($generated, $receivedToken);
+    }
+
+    public function processNotification(array $requestData): array
+    {
+        $tid = $requestData['cpm_trans_id'] ?? null;
+        if ($tid) {
+            return ['success' => false, 'message' => 'Utiliser le webhook API v1 (JSON)'];
+        }
+
+        return ['success' => false, 'message' => 'Format inconnu'];
+    }
+
+    protected function normalizeMerchantTransactionId(?string $id): string
+    {
+        if ($id === null || $id === '') {
+            $id = 'P' . substr(str_replace('-', '', (string) Str::uuid()), 0, 20);
+        }
+        $id = preg_replace('/[^a-zA-Z0-9]/', '', $id) ?: 'P' . time();
+
+        return substr($id, 0, 30);
+    }
+
+    protected function clientName(string $name, bool $isFirst): string
+    {
+        $name = trim($name) ?: ($isFirst ? 'Client' : 'User');
+        if (mb_strlen($name) < 2) {
+            $name = $isFirst ? 'Client' : 'User';
+        }
+
+        return mb_substr($name, 0, 255);
+    }
+
+    protected function sanitizeDesignation(string $s): string
+    {
+        $s = preg_replace('/[#\/\$_&]/', ' ', $s);
+
+        return mb_substr(trim($s) ?: 'Paiement', 0, 500);
+    }
+
+    protected function truncateUrl(string $url): string
+    {
+        $url = trim($url);
+        if (strlen($url) <= 120) {
+            return $url;
+        }
+
+        return substr($url, 0, 120);
+    }
+
+    protected function normalizePhone(string $phone): string
+    {
+        $phone = preg_replace('/\s+/', '', $phone);
+        if ($phone !== '' && $phone[0] !== '+') {
+            $phone = '+' . ltrim($phone, '0');
+        }
+
+        return $phone;
     }
 }
