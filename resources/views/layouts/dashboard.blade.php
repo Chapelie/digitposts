@@ -82,7 +82,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 font-medium">Administration</a>
                 @endif
                 <div class="my-1 border-t border-gray-100"></div>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout', [], false) }}">
                     @csrf
                     <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Déconnexion</button>
                 </form>
@@ -210,7 +210,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 @if(Auth::user()->isAdmin())
                     <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 text-sm text-blue-700 font-medium rounded-md hover:bg-blue-50">Administration</a>
                 @endif
-                <form method="POST" action="{{ route('logout') }}" class="mt-2">
+                <form method="POST" action="{{ route('logout', [], false) }}" class="mt-2">
                     @csrf
                     <button type="submit" class="w-full flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-md transition-colors border border-red-200">
                         Déconnexion
