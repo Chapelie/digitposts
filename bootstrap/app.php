@@ -11,6 +11,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Derrière Nginx / Cloudflare : Laravel voit le bon schéma (HTTPS) pour les cookies Secure
+        $trusted = env('TRUSTED_PROXIES');
+        if ($trusted === '*') {
+            $middleware->trustProxies(at: '*');
+        } elseif (is_string($trusted) && $trusted !== '' && $trusted !== 'false') {
+            $middleware->trustProxies(at: array_map('trim', explode(',', $trusted)));
+        }
+
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
