@@ -158,7 +158,7 @@ class CreatorController extends Controller{
                  'file.max' => 'Le fichier ne doit pas dépasser 5MB.',
                  'categories.max' => 'Vous ne pouvez sélectionner que 10 catégories maximum.',
              ]);
-
+             dd('validsate');
          // Publier : si prix = 0 ET paiement désactivé (gratuit), pas d'abonnement requis
          $status = $request->input('status', 'brouillon');
          if ($status === 'publiée') {

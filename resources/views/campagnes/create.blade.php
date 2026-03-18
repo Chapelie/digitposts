@@ -17,7 +17,7 @@
             <p class="text-gray-500">Créez un nouveau événement ou formation</p>
         </div>
 
-        <form action="{{ route('campaigns.store') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('campaigns.store', [], false) }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             @php
