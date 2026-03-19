@@ -186,6 +186,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </header>
 
 <main class="flex-1">
+    <div class="container mx-auto px-4 max-w-4xl pt-4">
+        @include('components.validation-errors')
+    </div>
     @yield('content')
 </main>
 

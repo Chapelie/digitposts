@@ -5,6 +5,15 @@
 
     RewriteEngine On
 
+    # Canonical: HTTPS + pas de www
+    RewriteCond %{HTTPS} !=on [OR]
+    RewriteCond %{HTTP_HOST} ^www\.digitposts\.com$ [NC]
+    RewriteRule ^ https://digitposts.com%{REQUEST_URI} [L,R=301]
+
+    # Si quelqu'un tape /public/... => enlever /public dans l'URL
+    RewriteCond %{REQUEST_URI} ^/public/(.+)$
+    RewriteRule ^public/(.+)$ /$1 [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

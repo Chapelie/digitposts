@@ -21,21 +21,11 @@
             @csrf
             <input type="hidden" name="cf_ts" value="{{ $cfTs }}">
             <input type="hidden" name="cf_mac" value="{{ $cfMac }}">
+            <input type="hidden" name="_campaign_create_source" value="{{ request()->routeIs('dashboard.campaigns.create') ? 'dashboard' : 'creator' }}">
 
             @if (session('error'))
                 <div class="rounded-lg border border-red-200 bg-red-50 p-4 mb-6 text-sm text-red-800">
                     {{ session('error') }}
-                </div>
-            @endif
-
-            @if ($errors->any())
-                <div class="rounded-lg border border-red-200 bg-red-50 p-4 mb-6">
-                    <div class="font-semibold text-red-800 mb-2">Vous devez corriger les erreurs suivantes :</div>
-                    <ul class="list-disc pl-5 text-sm text-red-700 space-y-1">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
                 </div>
             @endif
 

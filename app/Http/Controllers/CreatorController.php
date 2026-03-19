@@ -7,6 +7,7 @@ use App\Models\Registration;
 use App\Models\Training;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Category;
 use Illuminate\Support\Facades\Hash;
@@ -42,9 +43,14 @@ class CreatorController extends Controller
         $ts = (int) $request->input('cf_ts', 0);
         $mac = (string) $request->input('cf_mac', '');
         if ($ts < 1 || $mac === '') {
-            return false;
+            // Compatibilite prod: certaines pages peuvent etre encore servies sans cf_ts/cf_mac
+            // (cache de vues/CDN). Dans ce cas, fallback sur verification du token formulaire.
+            $formToken = (string) $request->input('_token', '');
+            $sessionToken = (string) $request->session()->token();
+
+            return $formToken !== '' && $sessionToken !== '' && hash_equals($sessionToken, $formToken);
         }
-        if (abs(time() - $ts) > 7200) {
+        if (abs(time() - $ts) > 86400) {
             return false;
         }
 
@@ -193,27 +199,37 @@ class CreatorController extends Controller
                 $request->merge(['end_date' => null]);
             }
 
-             $request->validate([
-                 'type' => 'required|in:event,training',
-                 'title' => 'required|string|max:255',
-                 'description' => 'nullable|string|max:5000',
-                 'start_date' => 'required|date|after_or_equal:today',
-                 'end_date' => 'nullable|date|after:start_date',
-                 'amount' => 'nullable|numeric|min:0|max:999999999',
-                 'file' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:5120', // 5MB max
-                 'categories' => 'nullable|array|max:10',
-                 'categories.*' => 'nullable|string|max:255',
-                 'new_categories' => 'nullable|string|max:500',
-                 'location' => 'nullable|string|max:255',
-                 'place' => 'nullable|string|max:255',
-                 'link' => 'nullable|url|max:500',
-                 'status' => 'nullable|in:brouillon,publiée',
-             ], [
-                 'start_date.after_or_equal' => 'La date de début doit être aujourd\'hui ou dans le futur.',
-                 'end_date.after' => 'La date de fin doit être après la date de début.',
-                 'file.max' => 'Le fichier ne doit pas dépasser 5MB.',
-                 'categories.max' => 'Vous ne pouvez sélectionner que 10 catégories maximum.',
-             ]);
+            $validator = Validator::make($request->all(), [
+                'type' => 'required|in:event,training',
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string|max:5000',
+                'start_date' => 'required|date|after_or_equal:today',
+                'end_date' => 'nullable|date|after:start_date',
+                'amount' => 'nullable|numeric|min:0|max:999999999',
+                'file' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
+                'categories' => 'nullable|array|max:10',
+                'categories.*' => 'nullable|string|max:255',
+                'new_categories' => 'nullable|string|max:500',
+                'location' => 'nullable|string|max:255',
+                'place' => 'nullable|string|max:255',
+                'link' => 'nullable|url|max:500',
+                'status' => 'nullable|in:brouillon,publiée',
+            ], [
+                'start_date.after_or_equal' => 'La date de début doit être aujourd\'hui ou dans le futur.',
+                'end_date.after' => 'La date de fin doit être après la date de début.',
+                'file.max' => 'Le fichier ne doit pas dépasser 5MB.',
+                'categories.max' => 'Vous ne pouvez sélectionner que 10 catégories maximum.',
+            ]);
+
+            if ($validator->fails()) {
+                $to = $request->input('_campaign_create_source') === 'dashboard'
+                    ? route('dashboard.campaigns.create')
+                    : route('campaigns.create');
+
+                return redirect()->to($to)
+                    ->withErrors($validator)
+                    ->withInput($request->except(['file']));
+            }
          // Publier : si prix = 0 ET paiement désactivé (gratuit), pas d'abonnement requis
          $status = $request->input('status', 'brouillon');
          if ($status === 'publiée') {

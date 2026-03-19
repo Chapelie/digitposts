@@ -219,6 +219,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div class="dashboard-main-wrapper flex-1 flex flex-col min-h-screen min-w-0 bg-white border-l border-gray-200">
     <main class="flex-1 p-4 md:p-6 lg:p-8 bg-gray-50">
         <div class="max-w-6xl w-full mx-auto">
+            @include('components.validation-errors')
             @yield('content')
         </div>
     </main>
