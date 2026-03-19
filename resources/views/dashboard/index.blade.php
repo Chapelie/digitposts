@@ -139,7 +139,7 @@
                                             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                                             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                                         </svg>
-                                        <span class="text-sm text-gray-500">{{ $campaign->feed->registrations->count() }} Inscriptions</span>
+                                        <span class="text-sm text-gray-500">{{ $campaign->feed->registrations_count ?? 0 }} Inscriptions</span>
                                     </div>
                                     <a href="{{ route('campaigns.show', $campaign->feed->id) }}" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                         Gérer
@@ -201,7 +201,7 @@
                             </div>
                             <div class="text-right">
                                 <p class="text-sm font-medium">{{ $feed->feedable->title }}</p>
-                                <p class="text-xs text-gray-500">{{ $feed->registrations->count() }} inscriptions</p>
+                                <p class="text-xs text-gray-500">{{ $feed->registrations_count ?? 0 }} inscriptions</p>
                             </div>
                         </div>
                     @empty

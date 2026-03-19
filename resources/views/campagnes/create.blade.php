@@ -19,6 +19,14 @@
 
         <form action="{{ route('campaigns.store', [], false) }}" method="POST" enctype="multipart/form-data">
             @csrf
+            <input type="hidden" name="cf_ts" value="{{ $cfTs }}">
+            <input type="hidden" name="cf_mac" value="{{ $cfMac }}">
+
+            @if (session('error'))
+                <div class="rounded-lg border border-red-200 bg-red-50 p-4 mb-6 text-sm text-red-800">
+                    {{ session('error') }}
+                </div>
+            @endif
 
             @if ($errors->any())
                 <div class="rounded-lg border border-red-200 bg-red-50 p-4 mb-6">

@@ -15,6 +15,8 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         'payments/notify',
         'subscriptions/notify',
+        // Création campagne : validée par signature HMAC (cf_ts / cf_mac) — évite 419 si session/token CSRF incohérents
+        'creator/campaigns/store',
     ];
 
     /**
@@ -36,6 +38,7 @@ class VerifyCsrfToken extends Middleware
         $path = trim($request->path(), '/');
 
         return str_ends_with($path, 'payments/notify')
-            || str_ends_with($path, 'subscriptions/notify');
+            || str_ends_with($path, 'subscriptions/notify')
+            || $request->routeIs('campaigns.store');
     }
 }

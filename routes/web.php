@@ -57,7 +57,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/creator/dashboard', [Creatorcontroller::class,'index'])->name('creator.dashboard');
     Route::get('/creator/campaigns/new', [CreatorController::class,'campaignCreate'])->name('campaigns.create');
     Route::get('/creator/campaigns', [CreatorController::class,'campaignIndex'])->name('campaigns.index');
-    Route::post('/creator/campaigns/store', [CreatorController::class,'campaignStore'])->name('campaigns.store');
+    Route::post('/creator/campaigns/store', [CreatorController::class, 'campaignStore'])
+        ->name('campaigns.store')
+        ->middleware('throttle:30,1');
     Route::get('/creator/campaigns/{uuid}/registrations', [CreatorController::class,'campaignRegistrations'])->name('campaigns.registrations');
     Route::get('/creator/campaigns/{uuid}/registrations/export-pdf', [CreatorController::class,'exportCampaignRegistrationsPdf'])->name('campaigns.registrations.export-pdf');
     Route::get('/creator/settings', [CreatorController::class,'settings'])->name('settings');

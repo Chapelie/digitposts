@@ -14,7 +14,43 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Subscription;
 use App\Services\CacheService;
 
-class CreatorController extends Controller{
+class CreatorController extends Controller
+{
+    /**
+     * Signature POST création campagne (remplace la dépendance au token CSRF session).
+     * Un site tiers ne peut pas forger le mac sans APP_KEY.
+     */
+    private static function appKeyBinary(): string
+    {
+        $k = (string) config('app.key');
+        if (str_starts_with($k, 'base64:')) {
+            $decoded = base64_decode(substr($k, 7), true);
+
+            return $decoded !== false ? $decoded : $k;
+        }
+
+        return $k;
+    }
+
+    private static function campaignStoreMac(int $userId, int $timestamp): string
+    {
+        return hash_hmac('sha256', $userId.'|'.$timestamp, self::appKeyBinary());
+    }
+
+    private static function campaignStoreMacValid(int $userId, Request $request): bool
+    {
+        $ts = (int) $request->input('cf_ts', 0);
+        $mac = (string) $request->input('cf_mac', '');
+        if ($ts < 1 || $mac === '') {
+            return false;
+        }
+        if (abs(time() - $ts) > 7200) {
+            return false;
+        }
+
+        return hash_equals(self::campaignStoreMac($userId, $ts), $mac);
+    }
+
     public function index()
     {
         $user = Auth::user();
@@ -23,7 +59,8 @@ class CreatorController extends Controller{
         // Cache pour 10 minutes
         $data = CacheService::remember($cacheKey, function () use ($user) {
             // Récupérer les feeds de l'utilisateur avec les relations (optimisé)
-            $feeds = Feed::with(['feedable', 'user', 'registrations'])
+            $feeds = Feed::with(['feedable', 'user'])
+                ->withCount('registrations')
                 ->where('user_id', $user->id)
                 ->orderBy('created_at', 'desc')
                 ->take(5)
@@ -47,6 +84,7 @@ class CreatorController extends Controller{
 
             // Récupérer les campagnes à venir (optimisé avec une seule requête via Feed)
             $upcomingFeeds = Feed::with(['feedable'])
+                ->withCount('registrations')
                 ->where('user_id', $user->id)
                 ->whereHasMorph('feedable', [Training::class, Event::class], function($query) {
                     $query->where('start_date', '>', now());
@@ -58,6 +96,8 @@ class CreatorController extends Controller{
             $upcomingCampaigns = $upcomingFeeds->map(function($feed) {
                 $feedable = $feed->feedable;
                 $feedable->type = $feed->feedable_type === 'App\Models\Training' ? 'training' : 'event';
+                $feedable->setRelation('feed', $feed);
+
                 return $feedable;
             })->sortBy('start_date')->take(3);
 
@@ -132,11 +172,20 @@ class CreatorController extends Controller{
         $zones = config('digitposts.zones', []);
         $tarifsDiffusion = config('digitposts.tarifs_diffusion', []);
         
-        return view('campagnes.create', compact('categories', 'zones', 'tarifsDiffusion'));
+        $cfTs = time();
+        $cfMac = self::campaignStoreMac(Auth::id(), $cfTs);
+
+        return view('campagnes.create', compact('categories', 'zones', 'tarifsDiffusion', 'cfTs', 'cfMac'));
      }
 
      public function campaignStore(Request $request){
             $user = Auth::user();
+
+            if (! self::campaignStoreMacValid($user->id, $request)) {
+                return redirect()->route('campaigns.create')
+                    ->with('error', 'Le formulaire a expiré ou est invalide. Rechargez la page « Créer une campagne » et réessayez.')
+                    ->withInput($request->except(['file', '_token']));
+            }
 
             // Si l'utilisateur choisit "event", on ignore end_date côté serveur.
             // (Le champ peut rester rempli même s'il est masqué dans le formulaire.)

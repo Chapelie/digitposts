@@ -239,7 +239,7 @@
                                     <!-- Stats -->
                                     <div class="flex items-center justify-between mb-4">
                                         <div class="text-sm text-gray-600">
-                                            <span class="font-semibold text-gray-900">{{ $feed->registrations->count() }}</span> inscriptions
+                                            <span class="font-semibold text-gray-900">{{ $feed->registrations_count ?? 0 }}</span> inscriptions
                                         </div>
                                         @if($campaign->location)
                                             <div class="text-xs text-gray-500 flex items-center">
@@ -394,7 +394,7 @@
                                     <!-- Stats -->
                                     <div class="flex items-center justify-between mb-4">
                                         <div class="text-sm text-gray-600">
-                                            <span class="font-semibold text-gray-900">{{ $feed->registrations->count() }}</span> inscriptions
+                                            <span class="font-semibold text-gray-900">{{ $feed->registrations_count ?? 0 }}</span> inscriptions
                                         </div>
                                         @if($campaign->location)
                                             <div class="text-xs text-gray-500 flex items-center">
