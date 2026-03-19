@@ -32,12 +32,12 @@ class CreatorController extends Controller
         return $k;
     }
 
-    private static function campaignStoreMac(int $userId, int $timestamp): string
+    private static function campaignStoreMac(string|int $userId, int $timestamp): string
     {
-        return hash_hmac('sha256', $userId.'|'.$timestamp, self::appKeyBinary());
+        return hash_hmac('sha256', (string) $userId.'|'.$timestamp, self::appKeyBinary());
     }
 
-    private static function campaignStoreMacValid(int $userId, Request $request): bool
+    private static function campaignStoreMacValid(string|int $userId, Request $request): bool
     {
         $ts = (int) $request->input('cf_ts', 0);
         $mac = (string) $request->input('cf_mac', '');
