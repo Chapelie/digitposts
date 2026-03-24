@@ -14,7 +14,9 @@ use App\Models\Category;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
 use App\Services\CacheService;
+use App\Support\CampaignWriteMac;
 
 class CreatorController extends Controller
 {
@@ -31,45 +33,6 @@ class CreatorController extends Controller
         }
 
         return $query;
-    }
-    /**
-     * Signature POST création campagne (remplace la dépendance au token CSRF session).
-     * Un site tiers ne peut pas forger le mac sans APP_KEY.
-     */
-    private static function appKeyBinary(): string
-    {
-        $k = (string) config('app.key');
-        if (str_starts_with($k, 'base64:')) {
-            $decoded = base64_decode(substr($k, 7), true);
-
-            return $decoded !== false ? $decoded : $k;
-        }
-
-        return $k;
-    }
-
-    private static function campaignStoreMac(string|int $userId, int $timestamp): string
-    {
-        return hash_hmac('sha256', (string) $userId.'|'.$timestamp, self::appKeyBinary());
-    }
-
-    private static function campaignStoreMacValid(string|int $userId, Request $request): bool
-    {
-        $ts = (int) $request->input('cf_ts', 0);
-        $mac = (string) $request->input('cf_mac', '');
-        if ($ts < 1 || $mac === '') {
-            // Compatibilite prod: certaines pages peuvent etre encore servies sans cf_ts/cf_mac
-            // (cache de vues/CDN). Dans ce cas, fallback sur verification du token formulaire.
-            $formToken = (string) $request->input('_token', '');
-            $sessionToken = (string) $request->session()->token();
-
-            return $formToken !== '' && $sessionToken !== '' && hash_equals($sessionToken, $formToken);
-        }
-        if (abs(time() - $ts) > 86400) {
-            return false;
-        }
-
-        return hash_equals(self::campaignStoreMac($userId, $ts), $mac);
     }
 
     public function index()
@@ -194,7 +157,7 @@ class CreatorController extends Controller
         $tarifsDiffusion = config('digitposts.tarifs_diffusion', []);
         
         $cfTs = time();
-        $cfMac = self::campaignStoreMac(Auth::id(), $cfTs);
+        $cfMac = CampaignWriteMac::forStore(Auth::id(), $cfTs);
 
         return view('campagnes.create', compact('categories', 'zones', 'tarifsDiffusion', 'cfTs', 'cfMac'));
      }
@@ -202,7 +165,7 @@ class CreatorController extends Controller
      public function campaignStore(Request $request){
             $user = Auth::user();
 
-            if (! self::campaignStoreMacValid($user->id, $request)) {
+            if (! CampaignWriteMac::validStoreOrUpdate($request, $user->id)) {
                 return redirect()->route('campaigns.create')
                     ->with('error', 'Le formulaire a expiré ou est invalide. Rechargez la page « Créer une campagne » et réessayez.')
                     ->withInput($request->except(['file', '_token']));
@@ -349,6 +312,24 @@ class CreatorController extends Controller
              return redirect()->route('dashboard.campaigns')->with('success', 'Brouillon enregistré avec succès !');
          }
 
+    /**
+     * Point d’entrée GET /creator/campaigns/{uuid} (sans /edit) : lien court, favoris, retours paiement, etc.
+     */
+    public function campaignShowOrRedirect(string $uuid)
+    {
+        $feed = Feed::query()->where('id', $uuid)->first();
+        if (! $feed) {
+            abort(404);
+        }
+
+        $user = Auth::user();
+        if ($this->canManageFeed($feed, $user)) {
+            return redirect()->route('campaigns.edit', $uuid);
+        }
+
+        return redirect()->route('campaigns.show', $uuid);
+    }
+
     public function campaignEdit(string $uuid)
     {
         $user = Auth::user();
@@ -363,20 +344,34 @@ class CreatorController extends Controller
         }, CacheService::TTL_DAY);
         $selectedCategoryIds = $campaign->categories->pluck('id')->all();
         $zones = config('digitposts.zones', []);
+        $cfTs = time();
+        $cfMac = CampaignWriteMac::forStore(Auth::id(), $cfTs);
 
-        return view('campagnes.edit', compact('feed', 'campaign', 'categories', 'selectedCategoryIds', 'zones'));
+        return view('campagnes.edit', compact('feed', 'campaign', 'categories', 'selectedCategoryIds', 'zones', 'cfTs', 'cfMac'));
     }
 
     public function campaignUpdate(Request $request, string $uuid)
     {
         $user = Auth::user();
+
+        if (! CampaignWriteMac::validStoreOrUpdate($request, $user->id)) {
+            return redirect()->route('campaigns.edit', $uuid)
+                ->with('error', 'Le formulaire a expiré ou est invalide. Rechargez la page et réessayez.')
+                ->withInput($request->except(['file', '_token']));
+        }
+
         $feed = $this->managedFeedQuery($user)
             ->with(['feedable.categories'])
             ->where('id', $uuid)
             ->firstOrFail();
         $campaign = $feed->feedable;
 
+        if ($request->input('type') === 'event') {
+            $request->merge(['end_date' => null]);
+        }
+
         $rules = [
+            'type' => 'required|in:event,training',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:5000',
             'start_date' => 'required|date',
@@ -388,7 +383,7 @@ class CreatorController extends Controller
             'categories.*' => 'nullable|string|max:255',
         ];
 
-        if ($feed->feedable_type === Training::class) {
+        if ($request->input('type') === 'training') {
             $rules = array_merge($rules, [
                 'end_date' => 'nullable|date|after_or_equal:start_date',
                 'place' => 'nullable|string|max:255',
@@ -399,11 +394,95 @@ class CreatorController extends Controller
 
         $data = $request->validate($rules);
 
+        $status = $data['status'];
+        if ($status === 'publiée') {
+            $amount = isset($data['amount']) ? (float) $data['amount'] : 0;
+            $isFree = false;
+            if ($data['type'] === 'event') {
+                $isFree = $amount <= 0;
+            } else {
+                $canPaid = $request->boolean('canPaid');
+                $isFree = ! $canPaid || $amount <= 0;
+            }
+            if (! $isFree && ! Subscription::hasActiveSubscription($user->id, SubscriptionPlan::TYPE_CREATE_ACTIVITIES)) {
+                session(['url.intended' => route('campaigns.edit', $uuid)]);
+
+                return redirect()->route('subscriptions.checkout', ['plan' => 'create_activities'])
+                    ->with('error', 'Pour publier une activité payante, abonnez-vous au plan « Création d\'activités ».');
+            }
+        }
+
+        $newFilePath = null;
         if ($request->hasFile('file')) {
-            if (!empty($campaign->file)) {
+            if (! empty($campaign->file)) {
                 Storage::disk('public')->delete($campaign->file);
             }
-            $data['file'] = $request->file('file')->store('feed/', 'public');
+            $newFilePath = $request->file('file')->store('feed/', 'public');
+        }
+
+        $currentIsTraining = $feed->feedable_type === Training::class;
+        $targetIsTraining = $data['type'] === 'training';
+
+        if ($currentIsTraining !== $targetIsTraining) {
+            $oldCampaign = $campaign;
+            $oldMorphType = $feed->feedable_type;
+            $categoryIds = $oldCampaign->categories->pluck('id')->all();
+
+            DB::table('categorizable')
+                ->where('categorizable_id', $oldCampaign->id)
+                ->where('categorizable_type', $oldMorphType)
+                ->delete();
+
+            $commonFile = $newFilePath ?? $oldCampaign->file;
+
+            if ($targetIsTraining) {
+                $newModel = Training::create([
+                    'title' => $data['title'],
+                    'description' => $data['description'] ?? null,
+                    'start_date' => $data['start_date'],
+                    'end_date' => $data['end_date'] ?? null,
+                    'amount' => $data['amount'] ?? 0,
+                    'location' => $data['location'] ?? null,
+                    'place' => $data['place'] ?? null,
+                    'link' => $data['link'] ?? null,
+                    'canPaid' => $request->boolean('canPaid'),
+                    'file' => $commonFile,
+                ]);
+            } else {
+                $newModel = Event::create([
+                    'title' => $data['title'],
+                    'description' => $data['description'] ?? null,
+                    'start_date' => $data['start_date'],
+                    'amount' => $data['amount'] ?? 0,
+                    'location' => $data['location'] ?? null,
+                    'file' => $commonFile,
+                ]);
+            }
+
+            if (! empty($categoryIds)) {
+                $newModel->attachCategories($categoryIds);
+            }
+
+            $feed->feedable_id = $newModel->id;
+            $feed->feedable_type = $targetIsTraining ? Training::class : Event::class;
+            $feed->status = $status;
+            $feed->save();
+
+            Registration::where('feed_id', $feed->id)->update([
+                'feed_type' => $feed->feedable_type,
+            ]);
+
+            $oldCampaign->delete();
+
+            CacheService::clearFeedsCache();
+            CacheService::clearUserCache($feed->user_id);
+            CacheService::forget('feed_'.$feed->id);
+
+            return redirect()->route('dashboard.campaigns')->with('success', 'Campagne modifiée (type mis à jour).');
+        }
+
+        if ($request->hasFile('file')) {
+            $data['file'] = $newFilePath;
         } else {
             unset($data['file']);
         }
@@ -448,13 +527,20 @@ class CreatorController extends Controller
 
         CacheService::clearFeedsCache();
         CacheService::clearUserCache($feed->user_id);
+        CacheService::forget('feed_'.$feed->id);
 
         return redirect()->route('dashboard.campaigns')->with('success', 'Campagne modifiée avec succès.');
     }
 
-    public function campaignDestroy(string $uuid)
+    public function campaignDestroy(Request $request, string $uuid)
     {
         $user = Auth::user();
+
+        if (! CampaignWriteMac::validDestroy($request, $user->id, $uuid)) {
+            return redirect()->route('dashboard.campaigns')
+                ->with('error', 'Impossible de supprimer : session expirée ou formulaire invalide. Rechargez la page « Mes campagnes » et réessayez.');
+        }
+
         $feed = $this->managedFeedQuery($user)
             ->with('feedable')
             ->where('id', $uuid)
@@ -476,6 +562,7 @@ class CreatorController extends Controller
 
         CacheService::clearFeedsCache();
         CacheService::clearUserCache($feed->user_id);
+        CacheService::forget('feed_'.$uuid);
 
         return redirect()->route('dashboard.campaigns')->with('success', 'Campagne supprimée avec succès.');
     }

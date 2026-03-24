@@ -2,6 +2,12 @@
 
 @section('content')
     <div class="space-y-8">
+        @if(session('success'))
+            <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+            <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
+        @endif
         <!-- Hero Section - Plus grand et plus attractif -->
         <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 rounded-xl p-8 text-white">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -272,6 +278,12 @@
                                         <form action="{{ route('campaigns.destroy', $feed->id) }}" method="POST" class="flex-1" onsubmit="return confirm('Supprimer cette campagne ? Cette action est irreversible.')">
                                             @csrf
                                             @method('DELETE')
+                                            @php
+                                                $_delTs = time();
+                                                $_delMac = \App\Support\CampaignWriteMac::forDestroy(auth()->id(), $feed->id, $_delTs);
+                                            @endphp
+                                            <input type="hidden" name="cf_ts" value="{{ $_delTs }}">
+                                            <input type="hidden" name="cf_mac" value="{{ $_delMac }}">
                                             <button type="submit" class="inline-flex items-center justify-center rounded-lg border border-transparent bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 w-full transition-colors">
                                                 Supprimer
                                             </button>
@@ -436,6 +448,12 @@
                                         <form action="{{ route('campaigns.destroy', $feed->id) }}" method="POST" class="flex-1" onsubmit="return confirm('Supprimer cette campagne ? Cette action est irreversible.')">
                                             @csrf
                                             @method('DELETE')
+                                            @php
+                                                $_delTs = time();
+                                                $_delMac = \App\Support\CampaignWriteMac::forDestroy(auth()->id(), $feed->id, $_delTs);
+                                            @endphp
+                                            <input type="hidden" name="cf_ts" value="{{ $_delTs }}">
+                                            <input type="hidden" name="cf_mac" value="{{ $_delMac }}">
                                             <button type="submit" class="inline-flex items-center justify-center rounded-lg border border-transparent bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 w-full transition-colors">
                                                 Supprimer
                                             </button>

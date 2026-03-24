@@ -94,6 +94,12 @@
                                       onsubmit="return confirm('Supprimer cette activité et toutes ses inscriptions ? Cette action est irréversible.');">
                                     @csrf
                                     @method('DELETE')
+                                    @php
+                                        $_admDelTs = time();
+                                        $_admDelMac = \App\Support\CampaignWriteMac::forDestroy(auth()->id(), $activity->id, $_admDelTs);
+                                    @endphp
+                                    <input type="hidden" name="cf_ts" value="{{ $_admDelTs }}">
+                                    <input type="hidden" name="cf_mac" value="{{ $_admDelMac }}">
                                     <button type="submit"
                                             class="inline-flex items-center rounded-md border border-transparent bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-red-700">
                                         Supprimer

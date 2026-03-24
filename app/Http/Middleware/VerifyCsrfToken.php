@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\CampaignWriteMac;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class VerifyCsrfToken extends Middleware
 {
@@ -37,8 +39,26 @@ class VerifyCsrfToken extends Middleware
 
         $path = trim($request->path(), '/');
 
-        return str_ends_with($path, 'payments/notify')
+        if (str_ends_with($path, 'payments/notify')
             || str_ends_with($path, 'subscriptions/notify')
-            || $request->routeIs('campaigns.store');
+            || $request->routeIs('campaigns.store')) {
+            return true;
+        }
+
+        $user = Auth::guard('web')->user();
+        if ($user) {
+            $uid = $user->getAuthIdentifier();
+            if ($request->routeIs('campaigns.update') && CampaignWriteMac::validStoreOrUpdate($request, $uid)) {
+                return true;
+            }
+            if ($request->routeIs('campaigns.destroy')) {
+                $fid = $request->route('uuid');
+                if (is_string($fid) && $fid !== '' && CampaignWriteMac::validDestroy($request, $uid, $fid)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

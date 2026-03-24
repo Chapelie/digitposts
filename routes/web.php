@@ -60,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/creator/campaigns/store', [CreatorController::class, 'campaignStore'])
         ->name('campaigns.store')
         ->middleware('throttle:30,1');
+    Route::get('/creator/campaigns/{uuid}', [CreatorController::class, 'campaignShowOrRedirect'])->name('campaigns.manage');
     Route::get('/creator/campaigns/{uuid}/edit', [CreatorController::class, 'campaignEdit'])->name('campaigns.edit');
     Route::put('/creator/campaigns/{uuid}', [CreatorController::class, 'campaignUpdate'])->name('campaigns.update');
     Route::delete('/creator/campaigns/{uuid}', [CreatorController::class, 'campaignDestroy'])->name('campaigns.destroy');
@@ -100,6 +101,7 @@ Route::middleware(['auth'])->group(function () {
     // Routes du dashboard créateur (alias sous /dashboard/)
     Route::get('/dashboard/campaigns', [CreatorController::class, 'campaignIndex'])->name('dashboard.campaigns');
     Route::get('/dashboard/campaigns/new', [CreatorController::class, 'campaignCreate'])->name('dashboard.campaigns.create');
+    Route::get('/dashboard/campaigns/{uuid}', [CreatorController::class, 'campaignShowOrRedirect'])->name('dashboard.campaigns.manage');
     Route::get('/dashboard/campaigns/{uuid}/registrations', [CreatorController::class, 'campaignRegistrations'])->name('dashboard.campaigns.registrations');
     Route::get('/dashboard/settings', [CreatorController::class, 'settings'])->name('dashboard.settings');
     Route::get('/dashboard/registrations', [CreatorController::class, 'campaignIndex'])->name('dashboard.registrations'); // Alias pour compatibilité
