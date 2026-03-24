@@ -147,49 +147,45 @@
                     @endauth
                 </div>
 
-                <!-- Nombre de formations et événements disponibles -->
-                <p class="text-sm mb-3 text-gray-700">Formations et événements disponibles</p>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-                    <div class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
-                        <div class="text-xl md:text-2xl font-bold text-blue-600 mb-0.5">{{ $trainingFeeds->count() }}</div>
-                        <div class="text-xs text-gray-700 font-medium">Formations</div>
-                    </div>
-                    <div class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
-                        <div class="text-xl md:text-2xl font-bold text-purple-600 mb-0.5">{{ $eventFeeds->count() }}</div>
-                        <div class="text-xs text-gray-700 font-medium">Événements</div>
-                    </div>
-                    <div class="text-center p-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
-                        <div class="text-xl md:text-2xl font-bold text-green-600 mb-0.5">{{ $upcomingCount }}</div>
-                        <div class="text-xs text-gray-700 font-medium">À Venir</div>
-                    </div>
+                <!-- Accès rapides : icônes Lucide (sans compteurs) -->
+                <p class="text-sm mb-4 text-gray-600">Explorer la plateforme</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+                    <a href="#section-trainings" class="hero-stat-tile group flex flex-col items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/90 p-5 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-blue-200 hover:shadow-xl hover:-translate-y-0.5">
+                        <i data-lucide="graduation-cap" class="hero-lucide h-12 w-12 text-blue-600 transition-transform duration-300 group-hover:scale-110" aria-hidden="true"></i>
+                        <span class="text-sm font-semibold text-gray-800">Formations</span>
+                    </a>
+                    <a href="#section-events" class="hero-stat-tile group flex flex-col items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/90 p-5 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-purple-200 hover:shadow-xl hover:-translate-y-0.5">
+                        <i data-lucide="calendar-days" class="hero-lucide h-12 w-12 text-purple-600 transition-transform duration-300 group-hover:scale-110" aria-hidden="true"></i>
+                        <span class="text-sm font-semibold text-gray-800">Événements</span>
+                    </a>
                     @auth
                         @php
                             $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
                         @endphp
                         @if($hasActiveSubscription)
-                            <a href="{{ route('home', ['free' => 'true']) }}#activities" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-amber-400 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
-                                <span class="inline-flex items-center justify-center w-8 h-8 mx-auto mb-1 rounded-full bg-amber-100 text-amber-600 group-hover:scale-110 transition-transform duration-300">
-                                    <svg class="w-5 h-5 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                            <a href="{{ route('home', ['free' => 'true']) }}#activities" class="volet-gratuit volet-gratuit--animated relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-amber-400 bg-white/95 p-5 text-center shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-xl">
+                                <span class="relative z-10 inline-flex rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200/80 p-3 text-amber-800 shadow-inner gratuit-lucide-wrap">
+                                    <i data-lucide="gift" class="gratuit-lucide h-10 w-10" aria-hidden="true"></i>
                                 </span>
-                                <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
-                                <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
+                                <span class="relative z-10 text-sm font-bold text-amber-900">Gratuits</span>
+                                <span class="relative z-10 text-xs font-medium text-amber-800/80">Voir les activités sans frais</span>
                             </a>
                         @else
-                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-amber-400 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
-                                <span class="inline-flex items-center justify-center w-8 h-8 mx-auto mb-1 rounded-full bg-amber-100 text-amber-600 group-hover:scale-110 transition-transform duration-300">
-                                    <svg class="w-5 h-5 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="volet-gratuit volet-gratuit--animated relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-amber-400 bg-white/95 p-5 text-center shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-xl">
+                                <span class="relative z-10 inline-flex rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200/80 p-3 text-amber-800 shadow-inner gratuit-lucide-wrap">
+                                    <i data-lucide="gift" class="gratuit-lucide h-10 w-10" aria-hidden="true"></i>
                                 </span>
-                                <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
-                                <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
+                                <span class="relative z-10 text-sm font-bold text-amber-900">Gratuits</span>
+                                <span class="relative z-10 text-xs font-medium text-amber-800/80">Abonnement accès gratuit</span>
                             </a>
                         @endif
                     @else
-                        <a href="{{ route('login') }}" class="volet-gratuit text-center p-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-amber-400 hover:bg-white hover:shadow-xl transition-all duration-300 cursor-pointer group animate-pulse-subtle">
-                            <span class="inline-flex items-center justify-center w-8 h-8 mx-auto mb-1 rounded-full bg-amber-100 text-amber-600 group-hover:scale-110 transition-transform duration-300">
-                                <svg class="w-5 h-5 animate-crown-bounce" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3H5v2h14v-2z"/></svg>
+                        <a href="{{ route('login') }}" class="volet-gratuit volet-gratuit--animated relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-amber-400 bg-white/95 p-5 text-center shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-xl">
+                            <span class="relative z-10 inline-flex rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200/80 p-3 text-amber-800 shadow-inner gratuit-lucide-wrap">
+                                <i data-lucide="gift" class="gratuit-lucide h-10 w-10" aria-hidden="true"></i>
                             </span>
-                            <div class="text-xl md:text-2xl font-bold text-orange-600 mb-0.5 group-hover:text-orange-700 transition-colors">{{ $freeCount }}</div>
-                            <div class="text-xs text-gray-700 font-medium group-hover:text-orange-600 transition-colors">Gratuites</div>
+                            <span class="relative z-10 text-sm font-bold text-amber-900">Gratuits</span>
+                            <span class="relative z-10 text-xs font-medium text-amber-800/80">Connectez-vous pour en profiter</span>
                         </a>
                     @endauth
                 </div>
@@ -294,7 +290,7 @@
     <section id="activities" class="py-16 bg-gray-100">
         <div class="container mx-auto px-4">
             <!-- Trainings Section -->
-            <div class="mb-16">
+            <div id="section-trainings" class="mb-16 scroll-mt-24">
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-bold text-gray-900 mb-4">Formations Disponibles</h2>
                     <div class="w-20 h-1 bg-gradient-to-r from-blue-600 to-blue-800 mx-auto"></div>
@@ -390,9 +386,9 @@
             </div>
 
             <!-- Events Section -->
-            <div>
+            <div id="section-events" class="scroll-mt-24">
                 <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Événements à Venir</h2>
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Événements</h2>
                     <div class="w-20 h-1 bg-gradient-to-r from-purple-600 to-purple-800 mx-auto"></div>
                 </div>
 
@@ -573,6 +569,53 @@
         @keyframes pulseSubtle {
             0%, 100% { opacity: 1; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
             50% { opacity: 0.95; box-shadow: 0 10px 20px -5px rgba(245, 158, 11, 0.35); }
+        }
+
+        /* Tuile « gratuits » : mise en avant animée (sans chiffres) */
+        .volet-gratuit--animated {
+            animation: gratuitCardGlow 2.8s ease-in-out infinite;
+        }
+        @keyframes gratuitCardGlow {
+            0%, 100% {
+                border-color: rgb(251 191 36 / 0.85);
+                box-shadow: 0 4px 20px rgb(245 158 11 / 0.22);
+            }
+            50% {
+                border-color: rgb(234 179 8 / 1);
+                box-shadow: 0 10px 36px rgb(245 158 11 / 0.4);
+            }
+        }
+        .volet-gratuit--animated::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(
+                105deg,
+                transparent 36%,
+                rgb(255 255 255 / 0.55) 50%,
+                transparent 64%
+            );
+            background-size: 220% 100%;
+            animation: gratuitShimmer 3.8s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes gratuitShimmer {
+            0% { background-position: 120% 0; }
+            100% { background-position: -120% 0; }
+        }
+        .gratuit-lucide-wrap .gratuit-lucide,
+        .volet-gratuit--animated .gratuit-lucide {
+            animation: gratuitIconFloat 2.2s ease-in-out infinite;
+        }
+        @keyframes gratuitIconFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            35% { transform: translateY(-6px) rotate(-5deg); }
+            70% { transform: translateY(-3px) rotate(5deg); }
+        }
+        .hero-lucide,
+        .hero-stat-tile [data-lucide] {
+            stroke-width: 1.75;
         }
 
         .animate-crown-glow {
@@ -918,7 +961,8 @@
 
     <!-- Swiper JS -->
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-    
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+
     <script>
         // Hero Swiper : toujours initialiser (au moins la slide intro)
         (function() {
@@ -986,6 +1030,21 @@
                 document.addEventListener('DOMContentLoaded', initCategoryFilterChipsSwiper);
             } else {
                 initCategoryFilterChipsSwiper();
+            }
+        })();
+
+        (function () {
+            function initLucideIcons() {
+                if (typeof lucide === 'undefined') {
+                    setTimeout(initLucideIcons, 40);
+                    return;
+                }
+                lucide.createIcons();
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initLucideIcons);
+            } else {
+                initLucideIcons();
             }
         })();
     </script>
