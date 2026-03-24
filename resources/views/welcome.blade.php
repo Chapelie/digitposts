@@ -219,121 +219,73 @@
                 </div>
 
                 @php
-                    $_dcf = config('digitposts.home_category_filter', []);
-                    $_catFilterMaxH = $_dcf['max_height'] ?? '9rem';
-                    $_catFilterHintFrom = (int) ($_dcf['show_scroll_hint_from'] ?? 10);
-                    $_categoryPillCount = 1 + $categories->count() + 1;
+                    $_hcf = config('digitposts.home_category_filter', []);
+                    $_cfSpace = (int) ($_hcf['space_between'] ?? 8);
+                    $_cfNav = (bool) ($_hcf['show_navigation'] ?? true);
                 @endphp
-                <!-- Desktop : puces catégories — hauteur max configurable, le surplus défile -->
-                <div class="hidden md:block w-full">
-                    <div
-                        class="mx-auto overflow-y-auto overscroll-y-contain px-1 py-2 [scrollbar-width:thin] [scrollbar-color:rgb(203_213_225)_transparent] rounded-lg border border-gray-100 bg-gray-50/50"
-                        style="max-height: {{ $_catFilterMaxH }}"
-                    >
-                        <div class="flex flex-wrap justify-center gap-2">
-                    <a href="{{ route('home', request()->only(['zone'])) }}#activities" 
-                       class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ !$selectedCategory && !$showFreeOnly ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
-                        Toutes les activités
-                    </a>
-                    @foreach($categories as $category)
-                        <a href="{{ route('home', array_merge(request()->only(['zone']), ['category' => $category->id])) }}#activities" 
-                           class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ $selectedCategory == $category->id ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/></svg>
-                            {{ $category->name }}
-                        </a>
-                    @endforeach
-                    @auth
-                        @php
-                            $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
-                        @endphp
-                        @if($hasActiveSubscription)
-                            <a href="{{ route('home', array_merge(request()->only(['zone']), ['free' => 'true'])) }}#activities" 
-                               class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ $showFreeOnly ? 'bg-green-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-green-50 hover:shadow-md' }}">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-                                Gratuites uniquement
-                            </a>
-                        @else
-                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" 
-                               class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow bg-white text-gray-700 hover:bg-green-50 hover:shadow-md">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-                                Gratuites uniquement
-                            </a>
-                        @endif
-                    @else
-                        <a href="{{ route('login') }}" 
-                           class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow bg-white text-gray-700 hover:bg-green-50 hover:shadow-md">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-                            Gratuites uniquement
-                        </a>
-                    @endauth
-                        </div>
-                    </div>
-                    @if($_categoryPillCount >= $_catFilterHintFrom)
-                        <p class="mt-2 text-center text-xs text-gray-500">Faire défiler pour voir toutes les catégories.</p>
+                <!-- Puces catégories : Swiper horizontal (swipe / flèches) -->
+                <div class="category-filter-chips-wrap relative mx-auto w-full max-w-6xl">
+                    @if($_cfNav)
+                        <div class="category-filter-chips-prev swiper-button-prev" aria-label="Catégories précédentes"></div>
+                        <div class="category-filter-chips-next swiper-button-next" aria-label="Catégories suivantes"></div>
                     @endif
-                </div>
-
-            <!-- Mobile Filter -->
-            <div class="md:hidden">
-                <div class="relative">
-                    <button id="mobile-filter-btn" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-left flex items-center justify-between shadow">
-                        <span class="text-gray-700 flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
-                            @if($showFreeOnly)
-                                Gratuites uniquement
-                            @elseif($selectedCategory)
-                                {{ $categories->firstWhere('id', $selectedCategory)->name }}
-                            @else
-                                Toutes les activités
-                            @endif
-                        </span>
-                        <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </button>
-                    <div id="mobile-filter-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50">
-                        <div class="py-2">
-                            <a href="{{ route('home') }}#activities" 
-                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-2 {{ !$selectedCategory && !$showFreeOnly ? 'bg-blue-50 text-blue-600' : '' }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
-                                Toutes les activités
-                            </a>
-                            @foreach($categories as $category)
-                                <a href="{{ route('home', ['category' => $category->id]) }}#activities" 
-                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-2 {{ $selectedCategory == $category->id ? 'bg-blue-50 text-blue-600' : '' }}">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/></svg>
-                                    {{ $category->name }}
+                    <div
+                        id="category-filter-chips"
+                        class="swiper category-filter-chips"
+                        data-space-between="{{ $_cfSpace }}"
+                        data-nav="{{ $_cfNav ? '1' : '0' }}"
+                    >
+                        <div class="swiper-wrapper items-center py-1">
+                            <div class="swiper-slide !h-auto !w-auto shrink-0">
+                                <a href="{{ route('home', request()->only(['zone'])) }}#activities"
+                                   class="inline-flex whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium shadow transition-all duration-300 items-center gap-2 {{ !$selectedCategory && !$showFreeOnly ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-200' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
+                                    <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+                                    Toutes les activités
                                 </a>
+                            </div>
+                            @foreach($categories as $category)
+                                <div class="swiper-slide !h-auto !w-auto shrink-0">
+                                    <a href="{{ route('home', array_merge(request()->only(['zone']), ['category' => $category->id])) }}#activities"
+                                       class="inline-flex whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium shadow transition-all duration-300 items-center gap-2 {{ $selectedCategory == $category->id ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-200' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
+                                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/></svg>
+                                        {{ $category->name }}
+                                    </a>
+                                </div>
                             @endforeach
                             @auth
                                 @php
                                     $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
                                 @endphp
                                 @if($hasActiveSubscription)
-                                    <a href="{{ route('home', ['free' => 'true']) }}#activities" 
-                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2 {{ $showFreeOnly ? 'bg-green-50 text-green-600' : '' }}">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-                                        Gratuites uniquement
-                                    </a>
+                                    <div class="swiper-slide !h-auto !w-auto shrink-0">
+                                        <a href="{{ route('home', array_merge(request()->only(['zone']), ['free' => 'true'])) }}#activities"
+                                           class="inline-flex whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium shadow transition-all duration-300 items-center gap-2 {{ $showFreeOnly ? 'bg-green-600 text-white shadow-lg ring-2 ring-green-200' : 'bg-white text-gray-700 hover:bg-green-50 hover:shadow-md' }}">
+                                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
+                                            Gratuites uniquement
+                                        </a>
+                                    </div>
                                 @else
-                                    <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" 
-                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-                                        Gratuites uniquement
-                                    </a>
+                                    <div class="swiper-slide !h-auto !w-auto shrink-0">
+                                        <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}"
+                                           class="inline-flex whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium shadow transition-all duration-300 items-center gap-2 bg-white text-gray-700 hover:bg-green-50 hover:shadow-md">
+                                            <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
+                                            Gratuites uniquement
+                                        </a>
+                                    </div>
                                 @endif
                             @else
-                                <a href="{{ route('login') }}" 
-                                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
-                                    Gratuites uniquement
-                                </a>
+                                <div class="swiper-slide !h-auto !w-auto shrink-0">
+                                    <a href="{{ route('login') }}"
+                                       class="inline-flex whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium shadow transition-all duration-300 items-center gap-2 bg-white text-gray-700 hover:bg-green-50 hover:shadow-md">
+                                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/></svg>
+                                        Gratuites uniquement
+                                    </a>
+                                </div>
                             @endauth
                         </div>
                     </div>
+                    <p class="mt-2 text-center text-xs text-gray-500">Glissez horizontalement pour voir toutes les catégories @if($_cfNav)<span class="hidden md:inline">; les flèches aident sur grand écran.</span>@endif</p>
                 </div>
-            </div>
             </div>
         </div>
     </section>
@@ -761,6 +713,45 @@
             transform: scale(1.25);
         }
 
+        /* Swiper : bandeau des catégories (puces, scroll horizontal) */
+        .category-filter-chips {
+            overflow: visible;
+        }
+        .category-filter-chips .swiper-slide {
+            width: auto;
+            height: auto;
+        }
+        .category-filter-chips-wrap .swiper-button-prev,
+        .category-filter-chips-wrap .swiper-button-next {
+            width: 2.25rem;
+            height: 2.25rem;
+            background: #fff;
+            border-radius: 9999px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+            color: #374151;
+        }
+        .category-filter-chips-wrap .swiper-button-prev:after,
+        .category-filter-chips-wrap .swiper-button-next:after {
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .category-filter-chips-wrap .swiper-button-disabled {
+            opacity: 0.25;
+            pointer-events: none;
+        }
+        @media (max-width: 767px) {
+            .category-filter-chips-wrap .swiper-button-prev,
+            .category-filter-chips-wrap .swiper-button-next {
+                display: none;
+            }
+        }
+        @media (min-width: 768px) {
+            .category-filter-chips {
+                padding-left: 2.75rem;
+                padding-right: 2.75rem;
+            }
+        }
+
         /* Swiper Styles */
         .events-swiper {
             padding-bottom: 50px;
@@ -914,24 +905,6 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Mobile filter dropdown
-            const filterBtn = document.getElementById('mobile-filter-btn');
-            const filterDropdown = document.getElementById('mobile-filter-dropdown');
-            const filterIcon = filterBtn.querySelector('svg');
-
-            filterBtn.addEventListener('click', function() {
-                filterDropdown.classList.toggle('hidden');
-                filterIcon.classList.toggle('rotate-180');
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(event) {
-                if (!filterBtn.contains(event.target) && !filterDropdown.contains(event.target)) {
-                    filterDropdown.classList.add('hidden');
-                    filterIcon.classList.remove('rotate-180');
-                }
-            });
-
             // Scroll automatique sur la section activités si filtre
             const url = new URL(window.location.href);
             if(url.hash === '#activities' || url.search.includes('category') || url.search.includes('free')) {
@@ -975,6 +948,44 @@
                 document.addEventListener('DOMContentLoaded', initHeroSwiper);
             } else {
                 initHeroSwiper();
+            }
+        })();
+
+        (function () {
+            function initCategoryFilterChipsSwiper() {
+                var el = document.getElementById('category-filter-chips');
+                if (!el || el.dataset.inited) {
+                    return;
+                }
+                if (typeof Swiper === 'undefined') {
+                    setTimeout(initCategoryFilterChipsSwiper, 50);
+                    return;
+                }
+                var wrap = el.closest('.category-filter-chips-wrap');
+                var sp = parseInt(el.getAttribute('data-space-between') || '8', 10);
+                var useNav = el.getAttribute('data-nav') === '1';
+                var opts = {
+                    slidesPerView: 'auto',
+                    spaceBetween: isNaN(sp) ? 8 : sp,
+                    freeMode: true,
+                    grabCursor: true,
+                    watchSlidesProgress: true,
+                    resistanceRatio: 0.85,
+                };
+                if (useNav && wrap) {
+                    var prev = wrap.querySelector('.category-filter-chips-prev');
+                    var next = wrap.querySelector('.category-filter-chips-next');
+                    if (prev && next) {
+                        opts.navigation = { prevEl: prev, nextEl: next };
+                    }
+                }
+                new Swiper(el, opts);
+                el.dataset.inited = '1';
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initCategoryFilterChipsSwiper);
+            } else {
+                initCategoryFilterChipsSwiper();
             }
         })();
     </script>

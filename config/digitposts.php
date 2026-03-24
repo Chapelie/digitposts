@@ -55,15 +55,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Filtre catégories sur l’accueil (desktop, puces)
+    | Filtre catégories sur l’accueil (Swiper horizontal, puces)
     |--------------------------------------------------------------------------
-    | max_height : hauteur max. du bloc avant défilement vertical (CSS, ex. 9rem).
-    | show_scroll_hint_from : affiche l’aide sous les puces lorsque le nombre de
-    |   puces (toutes les activités + chaque catégorie + gratuit) atteint ce seuil.
+    | space_between : espacement entre les puces (px).
+    | show_navigation : flèches précédent / suivant (md+ ; au doigt, swipe partout).
     */
     'home_category_filter' => [
-        'max_height' => '10.5rem',
-        'show_scroll_hint_from' => 10,
+        'space_between' => 8,
+        'show_navigation' => true,
     ],
 
 ];
