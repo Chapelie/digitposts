@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use App\Models\Category;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
@@ -17,6 +18,20 @@ use App\Services\CacheService;
 
 class CreatorController extends Controller
 {
+    private function canManageFeed(Feed $feed, $user): bool
+    {
+        return $user && ($user->isAdmin() || (string) $feed->user_id === (string) $user->id);
+    }
+
+    private function managedFeedQuery($user)
+    {
+        $query = Feed::query();
+        if (! $user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query;
+    }
     /**
      * Signature POST création campagne (remplace la dépendance au token CSRF session).
      * Un site tiers ne peut pas forger le mac sans APP_KEY.
@@ -147,13 +162,13 @@ class CreatorController extends Controller
     public function campaignIndex()
     {
         $user = Auth::user();
-        $cacheKey = CacheService::userKey($user->id, 'campaigns_list');
+        $cacheKey = CacheService::userKey($user->id, 'campaigns_list_'.($user->isAdmin() ? 'admin' : 'owner'));
 
         $limit = config('scaling.limits.campaigns_per_creator', 500);
         $campaigns = CacheService::remember($cacheKey, function () use ($user, $limit) {
-            return Feed::with(['feedable.categories', 'user'])
+            return $this->managedFeedQuery($user)
+                ->with(['feedable.categories', 'user'])
                 ->withCount('registrations')
-                ->where('user_id', $user->id)
                 ->whereHasMorph('feedable', [Event::class, Training::class])
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
@@ -334,13 +349,144 @@ class CreatorController extends Controller
              return redirect()->route('dashboard.campaigns')->with('success', 'Brouillon enregistré avec succès !');
          }
 
+    public function campaignEdit(string $uuid)
+    {
+        $user = Auth::user();
+        $feed = $this->managedFeedQuery($user)
+            ->with(['feedable.categories', 'user'])
+            ->where('id', $uuid)
+            ->firstOrFail();
+
+        $campaign = $feed->feedable;
+        $categories = CacheService::remember('categories_all', function () {
+            return Category::orderBy('name')->get();
+        }, CacheService::TTL_DAY);
+        $selectedCategoryIds = $campaign->categories->pluck('id')->all();
+        $zones = config('digitposts.zones', []);
+
+        return view('campagnes.edit', compact('feed', 'campaign', 'categories', 'selectedCategoryIds', 'zones'));
+    }
+
+    public function campaignUpdate(Request $request, string $uuid)
+    {
+        $user = Auth::user();
+        $feed = $this->managedFeedQuery($user)
+            ->with(['feedable.categories'])
+            ->where('id', $uuid)
+            ->firstOrFail();
+        $campaign = $feed->feedable;
+
+        $rules = [
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:5000',
+            'start_date' => 'required|date',
+            'amount' => 'nullable|numeric|min:0|max:999999999',
+            'status' => 'required|in:brouillon,publiée',
+            'location' => 'nullable|string|max:255',
+            'file' => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,webp|max:5120',
+            'categories' => 'nullable|array|max:10',
+            'categories.*' => 'nullable|string|max:255',
+        ];
+
+        if ($feed->feedable_type === Training::class) {
+            $rules = array_merge($rules, [
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'place' => 'nullable|string|max:255',
+                'link' => 'nullable|url|max:500',
+                'canPaid' => 'nullable|boolean',
+            ]);
+        }
+
+        $data = $request->validate($rules);
+
+        if ($request->hasFile('file')) {
+            if (!empty($campaign->file)) {
+                Storage::disk('public')->delete($campaign->file);
+            }
+            $data['file'] = $request->file('file')->store('feed/', 'public');
+        } else {
+            unset($data['file']);
+        }
+
+        if ($feed->feedable_type === Event::class) {
+            $campaign->update([
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'start_date' => $data['start_date'],
+                'amount' => $data['amount'] ?? 0,
+                'location' => $data['location'] ?? null,
+                'file' => $data['file'] ?? $campaign->file,
+            ]);
+        } else {
+            $campaign->update([
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'start_date' => $data['start_date'],
+                'end_date' => $data['end_date'] ?? null,
+                'amount' => $data['amount'] ?? 0,
+                'location' => $data['location'] ?? null,
+                'place' => $data['place'] ?? null,
+                'link' => $data['link'] ?? null,
+                'canPaid' => $request->boolean('canPaid'),
+                'file' => $data['file'] ?? $campaign->file,
+            ]);
+        }
+
+        $feed->update(['status' => $data['status']]);
+
+        if ($request->has('categories')) {
+            DB::table('categorizable')
+                ->where('categorizable_id', $campaign->id)
+                ->where('categorizable_type', $feed->feedable_type)
+                ->delete();
+
+            $categoryIds = array_unique(array_filter($request->input('categories', [])));
+            if (! empty($categoryIds)) {
+                $campaign->attachCategories($categoryIds);
+            }
+        }
+
+        CacheService::clearFeedsCache();
+        CacheService::clearUserCache($feed->user_id);
+
+        return redirect()->route('dashboard.campaigns')->with('success', 'Campagne modifiée avec succès.');
+    }
+
+    public function campaignDestroy(string $uuid)
+    {
+        $user = Auth::user();
+        $feed = $this->managedFeedQuery($user)
+            ->with('feedable')
+            ->where('id', $uuid)
+            ->firstOrFail();
+        $campaign = $feed->feedable;
+
+        if ($campaign && !empty($campaign->file)) {
+            Storage::disk('public')->delete($campaign->file);
+        }
+
+        DB::table('categorizable')
+            ->where('categorizable_id', $campaign->id)
+            ->where('categorizable_type', $feed->feedable_type)
+            ->delete();
+
+        $feed->registrations()->delete();
+        $feed->delete();
+        $campaign?->delete();
+
+        CacheService::clearFeedsCache();
+        CacheService::clearUserCache($feed->user_id);
+
+        return redirect()->route('dashboard.campaigns')->with('success', 'Campagne supprimée avec succès.');
+    }
+
     public function campaignRegistrations($uuid)
     {
         $user = Auth::user();
         
         // Récupérer la campagne avec ses inscriptions
-        $feed = Feed::where('id', $uuid)
-            ->where('user_id', $user->id)
+        $feed = $this->managedFeedQuery($user)
+            ->where('id', $uuid)
             ->with(['feedable', 'registrations.user'])
             ->firstOrFail();
 
@@ -427,8 +573,8 @@ class CreatorController extends Controller
         $user = Auth::user();
         
         // Récupérer la campagne avec ses inscriptions
-        $feed = Feed::where('id', $uuid)
-            ->where('user_id', $user->id)
+        $feed = $this->managedFeedQuery($user)
+            ->where('id', $uuid)
             ->with(['feedable', 'registrations.user'])
             ->firstOrFail();
 

@@ -60,6 +60,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/creator/campaigns/store', [CreatorController::class, 'campaignStore'])
         ->name('campaigns.store')
         ->middleware('throttle:30,1');
+    Route::get('/creator/campaigns/{uuid}/edit', [CreatorController::class, 'campaignEdit'])->name('campaigns.edit');
+    Route::put('/creator/campaigns/{uuid}', [CreatorController::class, 'campaignUpdate'])->name('campaigns.update');
+    Route::delete('/creator/campaigns/{uuid}', [CreatorController::class, 'campaignDestroy'])->name('campaigns.destroy');
     Route::get('/creator/campaigns/{uuid}/registrations', [CreatorController::class,'campaignRegistrations'])->name('campaigns.registrations');
     Route::get('/creator/campaigns/{uuid}/registrations/export-pdf', [CreatorController::class,'exportCampaignRegistrationsPdf'])->name('campaigns.registrations.export-pdf');
     Route::get('/creator/settings', [CreatorController::class,'settings'])->name('settings');
