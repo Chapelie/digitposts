@@ -113,8 +113,13 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('dashboard');
         Route::get('/users', [AdminController::class, 'users'])->name('users');
+        Route::get('/users/{user}/edit', [AdminController::class, 'userEdit'])->name('users.edit');
+        Route::put('/users/{user}', [AdminController::class, 'userUpdate'])->name('users.update');
+        Route::delete('/users/{user}', [AdminController::class, 'userDestroy'])->name('users.destroy');
         Route::get('/activities', [AdminController::class, 'activities'])->name('activities');
         Route::get('/registrations', [AdminController::class, 'registrations'])->name('registrations');
+        Route::get('/registrations/{registration}', [AdminController::class, 'registrationShow'])->name('registrations.show');
+        Route::delete('/registrations/{registration}', [AdminController::class, 'registrationDestroy'])->name('registrations.destroy');
 
         // Plans d'abonnement (montant, durée modifiables par l'admin)
         Route::get('/plans', [AdminSubscriptionPlanController::class, 'index'])->name('plans.index');

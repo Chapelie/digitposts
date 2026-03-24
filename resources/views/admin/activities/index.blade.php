@@ -25,6 +25,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inscriptions</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -75,10 +76,35 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ $activity->created_at->format('d/m/Y') }}
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <div class="inline-flex flex-wrap items-center justify-end gap-2">
+                                <a href="{{ route('campaigns.show', $activity->id) }}" target="_blank" rel="noopener noreferrer"
+                                   class="inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                                    Voir
+                                </a>
+                                <a href="{{ route('campaigns.edit', $activity->id) }}"
+                                   class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-700">
+                                    Modifier
+                                </a>
+                                <a href="{{ route('campaigns.registrations', $activity->id) }}"
+                                   class="inline-flex items-center rounded-md border border-transparent bg-purple-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-purple-700">
+                                    Inscriptions
+                                </a>
+                                <form action="{{ route('campaigns.destroy', $activity->id) }}" method="POST" class="inline"
+                                      onsubmit="return confirm('Supprimer cette activité et toutes ses inscriptions ? Cette action est irréversible.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="inline-flex items-center rounded-md border border-transparent bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-red-700">
+                                        Supprimer
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">Aucune activité trouvée.</td>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">Aucune activité trouvée.</td>
                     </tr>
                 @endforelse
             </tbody>

@@ -15,6 +15,13 @@
         </a>
     </div>
 
+    @if(session('success'))
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">{{ session('success') }}</div>
+    @endif
+    @if(session('error'))
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">{{ session('error') }}</div>
+    @endif
+
     <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -25,6 +32,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paiement</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -105,10 +113,20 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ $registration->created_at->format('d/m/Y H:i') }}
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            <div class="flex flex-wrap items-center justify-end gap-2">
+                                <a href="{{ route('admin.registrations.show', $registration) }}" class="text-blue-600 hover:text-blue-800 font-medium">Voir</a>
+                                <form method="POST" action="{{ route('admin.registrations.destroy', $registration) }}" class="inline" onsubmit="return confirm('Supprimer cette inscription ?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-800 font-medium bg-transparent border-0 p-0 cursor-pointer">Supprimer</button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">Aucune inscription trouvée.</td>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">Aucune inscription trouvée.</td>
                     </tr>
                 @endforelse
             </tbody>

@@ -98,6 +98,9 @@ class CacheService
         Cache::forget('admin_monthly_stats');
         Cache::forget('admin_top_creators');
         Cache::forget('admin_popular_activities');
+        Cache::forget('admin_recent_users');
+        Cache::forget('admin_recent_feeds');
+        Cache::forget('admin_recent_registrations');
     }
 
     /**

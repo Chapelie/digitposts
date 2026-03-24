@@ -12,7 +12,7 @@ use App\Services\CacheService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
@@ -171,6 +171,98 @@ class AdminController extends Controller
             ->paginate(20);
 
         return view('admin.registrations.index', compact('registrations'));
+    }
+
+    public function userEdit(User $user)
+    {
+        return view('admin.users.edit', compact('user'));
+    }
+
+    public function userUpdate(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'firstname' => 'required|string|max:255',
+            'lastname' => 'required|string|max:255',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'phone' => 'nullable|string|max:30',
+            'organization' => 'nullable|string|max:255',
+            'role' => 'required|string|in:admin,user',
+        ]);
+
+        if ($user->role === 'admin' && $data['role'] === 'user') {
+            $otherAdmins = User::where('role', 'admin')->where('id', '!=', $user->id)->exists();
+            if (!$otherAdmins) {
+                return redirect()->back()->withInput()->with('error', 'Impossible de retirer le rôle admin : c\'est le dernier administrateur.');
+            }
+        }
+
+        $data['is_admin'] = $data['role'] === 'admin';
+        $user->fill($data);
+        $user->save();
+
+        CacheService::clearUserCache($user->id);
+        CacheService::clearAdminCache();
+
+        return redirect()->route('admin.users')->with('success', 'Utilisateur mis à jour.');
+    }
+
+    public function userDestroy(User $user)
+    {
+        if ($user->id === Auth::id()) {
+            return redirect()->route('admin.users')->with('error', 'Vous ne pouvez pas supprimer votre propre compte.');
+        }
+
+        if ($user->role === 'admin') {
+            $otherAdmins = User::where('role', 'admin')->where('id', '!=', $user->id)->exists();
+            if (!$otherAdmins) {
+                return redirect()->route('admin.users')->with('error', 'Impossible de supprimer le dernier administrateur.');
+            }
+        }
+
+        if ($user->feeds()->exists()) {
+            return redirect()->route('admin.users')->with('error', 'Impossible de supprimer cet utilisateur : il possède encore des campagnes. Supprimez ou transférez-les d’abord.');
+        }
+
+        $uid = $user->id;
+        $user->delete();
+
+        CacheService::clearUserCache($uid);
+        CacheService::clearAdminCache();
+
+        return redirect()->route('admin.users')->with('success', 'Utilisateur supprimé.');
+    }
+
+    public function registrationShow(Registration $registration)
+    {
+        $registration->load(['feed.feedable.categories', 'feed.user', 'user']);
+
+        return view('inscriptions.show', [
+            'registration' => $registration,
+            'adminBack' => true,
+        ]);
+    }
+
+    public function registrationDestroy(Registration $registration)
+    {
+        $feed = $registration->feed;
+        $ownerId = $feed?->user_id;
+        $participantId = $registration->user_id;
+        $feedId = $registration->feed_id;
+
+        $registration->delete();
+
+        if ($ownerId) {
+            CacheService::clearUserCache($ownerId);
+        }
+        if ($participantId) {
+            CacheService::clearUserCache($participantId);
+        }
+        if ($feedId) {
+            CacheService::forget('feed_' . $feedId);
+        }
+        CacheService::clearAdminCache();
+
+        return redirect()->route('admin.registrations')->with('success', 'Inscription supprimée.');
     }
 
     private function getMonthlyStats()
