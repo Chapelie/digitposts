@@ -218,9 +218,19 @@
                     </select>
                 </div>
 
-                <!-- Desktop Filter Catégories + Gratuit -->
-                <div class="hidden md:block">
-                    <div class="flex flex-wrap justify-center gap-2">
+                @php
+                    $_dcf = config('digitposts.home_category_filter', []);
+                    $_catFilterMaxH = $_dcf['max_height'] ?? '9rem';
+                    $_catFilterHintFrom = (int) ($_dcf['show_scroll_hint_from'] ?? 10);
+                    $_categoryPillCount = 1 + $categories->count() + 1;
+                @endphp
+                <!-- Desktop : puces catégories — hauteur max configurable, le surplus défile -->
+                <div class="hidden md:block w-full">
+                    <div
+                        class="mx-auto overflow-y-auto overscroll-y-contain px-1 py-2 [scrollbar-width:thin] [scrollbar-color:rgb(203_213_225)_transparent] rounded-lg border border-gray-100 bg-gray-50/50"
+                        style="max-height: {{ $_catFilterMaxH }}"
+                    >
+                        <div class="flex flex-wrap justify-center gap-2">
                     <a href="{{ route('home', request()->only(['zone'])) }}#activities" 
                        class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 shadow {{ !$selectedCategory && !$showFreeOnly ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-white text-gray-700 hover:bg-blue-50 hover:shadow-md' }}">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
@@ -257,8 +267,12 @@
                             Gratuites uniquement
                         </a>
                     @endauth
+                        </div>
+                    </div>
+                    @if($_categoryPillCount >= $_catFilterHintFrom)
+                        <p class="mt-2 text-center text-xs text-gray-500">Faire défiler pour voir toutes les catégories.</p>
+                    @endif
                 </div>
-            </div>
 
             <!-- Mobile Filter -->
             <div class="md:hidden">

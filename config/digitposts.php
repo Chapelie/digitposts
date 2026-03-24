@@ -53,4 +53,17 @@ return [
     */
     'show_users_count' => false,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Filtre catégories sur l’accueil (desktop, puces)
+    |--------------------------------------------------------------------------
+    | max_height : hauteur max. du bloc avant défilement vertical (CSS, ex. 9rem).
+    | show_scroll_hint_from : affiche l’aide sous les puces lorsque le nombre de
+    |   puces (toutes les activités + chaque catégorie + gratuit) atteint ce seuil.
+    */
+    'home_category_filter' => [
+        'max_height' => '10.5rem',
+        'show_scroll_hint_from' => 10,
+    ],
+
 ];
