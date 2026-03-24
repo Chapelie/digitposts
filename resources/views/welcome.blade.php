@@ -147,45 +147,45 @@
                     @endauth
                 </div>
 
-                <!-- Accès rapides : icônes Lucide (sans compteurs) -->
-                <p class="text-sm mb-4 text-gray-600">Explorer la plateforme</p>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
-                    <a href="#section-trainings" class="hero-stat-tile group flex flex-col items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/90 p-5 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-blue-200 hover:shadow-xl hover:-translate-y-0.5">
-                        <i data-lucide="graduation-cap" class="hero-lucide h-12 w-12 text-blue-600 transition-transform duration-300 group-hover:scale-110" aria-hidden="true"></i>
-                        <span class="text-sm font-semibold text-gray-800">Formations</span>
+                <!-- Accès rapides : 3 tuiles côte à côte (même style que l’ancien bandeau chiffres du welcome) -->
+                <p class="text-sm mb-3 text-gray-700">Explorer la plateforme</p>
+                <div class="hero-quick-grid mx-auto grid w-full max-w-4xl grid-cols-3 gap-2 sm:gap-3 md:gap-4 items-stretch">
+                    <a href="#section-trainings" class="hero-stat-tile group flex min-h-[5.5rem] sm:min-h-[6.25rem] flex-col items-center justify-center gap-1.5 text-center rounded-lg border border-white/20 bg-white/90 p-2.5 sm:p-3 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-blue-200/80 hover:shadow-xl md:gap-2 md:p-4">
+                        <i data-lucide="graduation-cap" class="hero-lucide h-8 w-8 shrink-0 text-blue-600 transition-transform duration-300 group-hover:scale-110 sm:h-10 sm:w-10 md:h-11 md:w-11" aria-hidden="true"></i>
+                        <span class="text-[11px] font-semibold leading-tight text-gray-800 sm:text-xs md:text-sm">Formations</span>
                     </a>
-                    <a href="#section-events" class="hero-stat-tile group flex flex-col items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/90 p-5 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-purple-200 hover:shadow-xl hover:-translate-y-0.5">
-                        <i data-lucide="calendar-days" class="hero-lucide h-12 w-12 text-purple-600 transition-transform duration-300 group-hover:scale-110" aria-hidden="true"></i>
-                        <span class="text-sm font-semibold text-gray-800">Événements</span>
+                    <a href="#section-events" class="hero-stat-tile group flex min-h-[5.5rem] sm:min-h-[6.25rem] flex-col items-center justify-center gap-1.5 text-center rounded-lg border border-white/20 bg-white/90 p-2.5 sm:p-3 shadow-lg backdrop-blur-sm transition-all duration-300 hover:border-purple-200/80 hover:shadow-xl md:gap-2 md:p-4">
+                        <i data-lucide="calendar-days" class="hero-lucide h-8 w-8 shrink-0 text-purple-600 transition-transform duration-300 group-hover:scale-110 sm:h-10 sm:w-10 md:h-11 md:w-11" aria-hidden="true"></i>
+                        <span class="text-[11px] font-semibold leading-tight text-gray-800 sm:text-xs md:text-sm">Événements</span>
                     </a>
                     @auth
                         @php
                             $hasActiveSubscription = \App\Models\Subscription::hasActiveSubscription(Auth::id(), \App\Models\SubscriptionPlan::TYPE_FREE_EVENTS);
                         @endphp
                         @if($hasActiveSubscription)
-                            <a href="{{ route('home', ['free' => 'true']) }}#activities" class="volet-gratuit volet-gratuit--animated relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-amber-400 bg-white/95 p-5 text-center shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-xl">
-                                <span class="relative z-10 inline-flex rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200/80 p-3 text-amber-800 shadow-inner gratuit-lucide-wrap">
-                                    <i data-lucide="gift" class="gratuit-lucide h-10 w-10" aria-hidden="true"></i>
+                            <a href="{{ route('home', ['free' => 'true']) }}#activities" class="volet-gratuit volet-gratuit--animated relative flex min-h-[5.5rem] sm:min-h-[6.25rem] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border-2 border-amber-400 bg-white/95 p-2.5 text-center shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-xl sm:p-3 md:gap-2 md:p-4">
+                                <span class="relative z-10 inline-flex shrink-0 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200/80 p-2 text-amber-800 shadow-inner gratuit-lucide-wrap sm:p-2.5">
+                                    <i data-lucide="gift" class="gratuit-lucide h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9" aria-hidden="true"></i>
                                 </span>
-                                <span class="relative z-10 text-sm font-bold text-amber-900">Gratuits</span>
-                                <span class="relative z-10 text-xs font-medium text-amber-800/80">Voir les activités sans frais</span>
+                                <span class="relative z-10 text-[11px] font-bold leading-tight text-amber-900 sm:text-xs md:text-sm">Gratuits</span>
+                                <span class="relative z-10 line-clamp-2 text-[9px] font-medium leading-snug text-amber-800/85 sm:text-xs">Sans frais</span>
                             </a>
                         @else
-                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="volet-gratuit volet-gratuit--animated relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-amber-400 bg-white/95 p-5 text-center shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-xl">
-                                <span class="relative z-10 inline-flex rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200/80 p-3 text-amber-800 shadow-inner gratuit-lucide-wrap">
-                                    <i data-lucide="gift" class="gratuit-lucide h-10 w-10" aria-hidden="true"></i>
+                            <a href="{{ route('subscriptions.checkout', ['plan' => 'free_events']) }}" class="volet-gratuit volet-gratuit--animated relative flex min-h-[5.5rem] sm:min-h-[6.25rem] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border-2 border-amber-400 bg-white/95 p-2.5 text-center shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-xl sm:p-3 md:gap-2 md:p-4">
+                                <span class="relative z-10 inline-flex shrink-0 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200/80 p-2 text-amber-800 shadow-inner gratuit-lucide-wrap sm:p-2.5">
+                                    <i data-lucide="gift" class="gratuit-lucide h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9" aria-hidden="true"></i>
                                 </span>
-                                <span class="relative z-10 text-sm font-bold text-amber-900">Gratuits</span>
-                                <span class="relative z-10 text-xs font-medium text-amber-800/80">Abonnement accès gratuit</span>
+                                <span class="relative z-10 text-[11px] font-bold leading-tight text-amber-900 sm:text-xs md:text-sm">Gratuits</span>
+                                <span class="relative z-10 line-clamp-2 text-[9px] font-medium leading-snug text-amber-800/85 sm:text-xs">Accès abonnement</span>
                             </a>
                         @endif
                     @else
-                        <a href="{{ route('login') }}" class="volet-gratuit volet-gratuit--animated relative flex flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-amber-400 bg-white/95 p-5 text-center shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-xl">
-                            <span class="relative z-10 inline-flex rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200/80 p-3 text-amber-800 shadow-inner gratuit-lucide-wrap">
-                                <i data-lucide="gift" class="gratuit-lucide h-10 w-10" aria-hidden="true"></i>
+                        <a href="{{ route('login') }}" class="volet-gratuit volet-gratuit--animated relative flex min-h-[5.5rem] sm:min-h-[6.25rem] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border-2 border-amber-400 bg-white/95 p-2.5 text-center shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-white hover:shadow-xl sm:p-3 md:gap-2 md:p-4">
+                            <span class="relative z-10 inline-flex shrink-0 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200/80 p-2 text-amber-800 shadow-inner gratuit-lucide-wrap sm:p-2.5">
+                                <i data-lucide="gift" class="gratuit-lucide h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9" aria-hidden="true"></i>
                             </span>
-                            <span class="relative z-10 text-sm font-bold text-amber-900">Gratuits</span>
-                            <span class="relative z-10 text-xs font-medium text-amber-800/80">Connectez-vous pour en profiter</span>
+                            <span class="relative z-10 text-[11px] font-bold leading-tight text-amber-900 sm:text-xs md:text-sm">Gratuits</span>
+                            <span class="relative z-10 line-clamp-2 text-[9px] font-medium leading-snug text-amber-800/85 sm:text-xs">Connexion</span>
                         </a>
                     @endauth
                 </div>
